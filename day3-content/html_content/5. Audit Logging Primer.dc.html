@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F2EC;color:#17191E;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#2F4FC9}a:hover{color:#17191E}
+*{box-sizing:border-box}
+</style>
+</helmet>
+<div style="max-width:1240px;margin:0 auto;padding:48px 28px 80px;display:flex;flex-direction:column;gap:56px">
+
+<header style="display:flex;flex-direction:column;gap:14px;max-width:840px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#5A5E66">Audit logging primer · Azure + Databricks</div>
+<h1 style="margin:0;font-size:44px;line-height:1.08;font-weight:600;letter-spacing:-.02em;text-wrap:balance">Audit logging in Azure Databricks: the audit system table versus diagnostic log delivery</h1>
+<p style="margin:0;font-size:18px;line-height:1.55;color:#3E424A;text-wrap:pretty"><strong>Audit logs</strong> record who did what: every sign-in, grant, query and secret read. Databricks offers two ways to receive the same events, and most organisations use both.</p>
+<div style="display:flex;flex-direction:column;gap:6px;border-left:2px solid #17191E;padding-left:14px;font-size:15px;line-height:1.5;color:#3E424A">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;color:#5A5E66">LEARNING OBJECTIVE</span>
+<span>Describe audit logging in Azure Databricks and the difference between the audit system table and diagnostic log delivery.</span>
+</div>
+</header>
+
+
+<section style="display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5A5E66">01</span>
+<h2 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-.01em">Why: what goes wrong without audit logs</h2>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:16px;align-items:stretch">
+
+<article style="background:#fff;border:1.5px solid #2F4FC9;border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;align-items:center;gap:10px">
+<span style="width:40px;height:40px;flex:none;display:inline-flex;align-items:center;justify-content:center;border:1.5px solid #2F4FC9;border-radius:4px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2F4FC9" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1.5"></rect><path d="M8.5 8h7"></path><path d="M8.5 12h7"></path><path d="M8.5 16h4"></path></svg></span>
+<h3 style="margin:0;font-size:20px;font-weight:600">Why audit logs?</h3>
+</div>
+<p style="margin:0;font-size:15px;line-height:1.55;color:#3E424A;text-wrap:pretty">Permissions say who <em>could</em> act. Audit logs record who <em>did</em>: every sign-in, grant, query and secret read. They are the evidence for auditors and the first thing you need in an incident.</p>
+<div style="display:flex;flex-direction:column">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#5A5E66;padding-bottom:8px;border-bottom:1px solid #E6E3DA"><span>RISK</span><span>PROTECTION</span></div>
+<sc-for list="{{ whyAudit }}" as="r" hint-placeholder-count="4">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;font-size:14px;line-height:1.45;padding:10px 0;border-bottom:1px solid #E6E3DA"><span>{{ r.risk }}</span><span style="color:#3E424A"><strong style="color:#17191E">{{ r.fix }}</strong> {{ r.how }}</span></div>
+</sc-for>
+</div>
+</article>
+</div>
+
+</section>
+
+<section style="display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5A5E66">02</span>
+<h2 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-.01em">Audit logging: two ways to get the same events</h2>
+</div>
+<p style="margin:0;font-size:16px;line-height:1.55;color:#3E424A;max-width:880px;text-wrap:pretty">Databricks records the same audit events either way. You choose how to receive them: query them inside Databricks from a <strong style="color:#C23E24">system table</strong>, or have Azure deliver them to your own tools through <strong style="color:#0E6F78">diagnostic settings</strong>. Most organisations use both.</p>
+
+<div style="background:#fff;border:1px solid #D9D5CA;border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:16px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;color:#5A5E66">THE FLOW</div>
+<div style="display:grid;grid-template-columns:minmax(200px,.8fr) minmax(0,2fr);gap:14px;align-items:stretch">
+<div style="border:1.5px solid #17191E;border-radius:4px;padding:14px;display:flex;flex-direction:column;gap:6px;justify-content:center">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#5A5E66">AUDIT EVENT</span>
+<span style="font-size:15px;font-weight:600">Priya grants SELECT on sales_prod.gold</span>
+<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5A5E66;word-break:break-all">service: unityCatalog · action: updatePermissions</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:stretch;gap:10px;flex-wrap:wrap">
+<span style="align-self:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C23E24">A →</span>
+<div style="flex:1 1 220px;border:1.5px solid #C23E24;background:#FBF3F1;border-radius:4px;padding:12px 14px;display:flex;flex-direction:column;gap:3px"><span style="font-weight:600;font-size:15px">system.access.audit</span><span style="font-size:13px;color:#3E424A">Unity Catalog system table. Query with SQL in Databricks.</span></div>
+<span style="align-self:center;font-size:13px;color:#C23E24">→</span>
+<div style="flex:1 1 180px;border:1px solid #F0CFC7;border-radius:4px;padding:12px 14px;display:flex;flex-direction:column;gap:3px"><span style="font-weight:600;font-size:15px">Notebooks, dashboards, SQL alerts</span><span style="font-size:13px;color:#3E424A">Investigation and reporting</span></div>
+</div>
+<div style="display:flex;align-items:stretch;gap:10px;flex-wrap:wrap">
+<span style="align-self:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#0E6F78">B →</span>
+<div style="flex:1 1 220px;border:1.5px solid #0E6F78;background:#F2F8F8;border-radius:4px;padding:12px 14px;display:flex;flex-direction:column;gap:3px"><span style="font-weight:600;font-size:15px">Diagnostic setting on dbw-prod</span><span style="font-size:13px;color:#3E424A">Azure Monitor. Pick log categories and a destination.</span></div>
+<span style="align-self:center;font-size:13px;color:#0E6F78">→</span>
+<div style="flex:1 1 180px;border:1px solid #CFE3E5;border-radius:4px;padding:12px 14px;display:flex;flex-direction:column;gap:3px"><span style="font-weight:600;font-size:15px">Log Analytics · Storage · Event Hubs</span><span style="font-size:13px;color:#3E424A">Sentinel, Splunk or other SIEM</span></div>
+</div>
+</div>
+</div>
+</div>
+
+<div style="background:#fff;border:1px solid #D9D5CA;border-radius:6px;padding:22px;display:flex;flex-direction:column">
+<div style="display:grid;grid-template-columns:minmax(0,.7fr) minmax(0,1fr) minmax(0,1fr);gap:14px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;padding-bottom:10px;border-bottom:1px solid #E6E3DA"><span style="color:#5A5E66"></span><span style="color:#C23E24">A · AUDIT SYSTEM TABLE</span><span style="color:#0E6F78">B · DIAGNOSTIC LOG DELIVERY</span></div>
+<sc-for list="{{ compare }}" as="r" hint-placeholder-count="8">
+<div style="display:grid;grid-template-columns:minmax(0,.7fr) minmax(0,1fr) minmax(0,1fr);gap:14px;font-size:14px;line-height:1.45;padding:11px 0;border-bottom:1px solid #E6E3DA">
+<span style="font-weight:600">{{ r.k }}</span><span style="color:#3E424A">{{ r.a }}</span><span style="color:#3E424A">{{ r.b }}</span>
+</div>
+</sc-for>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;align-items:stretch">
+<div style="background:#fff;border:1.5px solid #C23E24;border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:12px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;color:#C23E24">KEY COLUMNS · SYSTEM.ACCESS.AUDIT</div>
+<sc-for list="{{ columns }}" as="c" hint-placeholder-count="6">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:10px;font-size:13px;padding:6px 0;border-top:1px solid #E6E3DA"><span style="font-family:'IBM Plex Mono',monospace;color:#C23E24;word-break:break-all">{{ c.c }}</span><span style="color:#3E424A">{{ c.d }}</span></div>
+</sc-for>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="background:#fff;border:1px solid #D9D5CA;border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:8px">
+<div style="font-size:16px;font-weight:600">Turn on verbose audit logs</div>
+<div style="font-size:14px;line-height:1.5;color:#3E424A;text-wrap:pretty">A workspace setting that adds the text of every notebook command and SQL query to the audit events. Without it you can see that a notebook ran, but not what it did. It applies to both delivery methods.</div>
+</div>
+<div style="background:#17191E;color:#F4F2EC;border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:8px">
+<div style="font-size:16px;font-weight:600">Recommended: use both</div>
+<div style="font-size:14px;line-height:1.5;color:#C9CCD2;text-wrap:pretty">Send diagnostic logs from every workspace to Log Analytics or Sentinel for real-time alerting and long retention the security team controls. Give data platform admins SELECT on <span style="font-family:'IBM Plex Mono',monospace">system.access</span> for investigation, usage reports and account-level events.</div>
+</div>
+</div>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5A5E66">03</span>
+<h2 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-.01em">Which log answers this question?</h2>
+<span style="font-size:15px;color:#5A5E66">Select an audit question to see both queries.</span>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<sc-for list="{{ qTabs }}" as="t" hint-placeholder-count="5">
+<button onClick="{{ t.select }}" style="cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:14px;padding:10px 14px;min-height:44px;border-radius:4px;border:1.5px solid #17191E;background:{{ t.bg }};color:{{ t.fg }};text-align:left;display:flex;align-items:center;gap:8px"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;opacity:.7">{{ t.n }}</span>{{ t.name }}</button>
+</sc-for>
+</div>
+<div style="background:#fff;border:1px solid #D9D5CA;border-radius:6px;padding:24px;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;flex-direction:column;gap:6px;max-width:860px">
+<div style="font-size:20px;font-weight:600">{{ q.name }}</div>
+<div style="font-size:15px;line-height:1.55;color:#3E424A;text-wrap:pretty">{{ q.context }}</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:12px">
+<div style="background:#FBF3F1;border-radius:4px;padding:16px;display:flex;flex-direction:column;gap:10px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#C23E24">A · SQL ON SYSTEM.ACCESS.AUDIT</div>
+<div style="background:#17191E;color:#E8E6E0;border-radius:3px;padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.65;overflow-x:auto;white-space:pre">{{ q.sql }}</div>
+</div>
+<div style="background:#F2F8F8;border-radius:4px;padding:16px;display:flex;flex-direction:column;gap:10px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#0E6F78">B · KQL IN LOG ANALYTICS</div>
+<div style="background:#17191E;color:#E8E6E0;border-radius:3px;padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.65;overflow-x:auto;white-space:pre">{{ q.kql }}</div>
+</div>
+</div>
+<div style="font-size:14px;line-height:1.5;color:#3E424A;border-top:1px solid #E6E3DA;padding-top:12px"><strong style="color:#17191E">Best source:</strong> {{ q.best }}</div>
+</div>
+</section>
+
+<section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;border-top:1px solid #D9D5CA;padding-top:28px">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font-weight:600">Deliver logs outside Databricks</div><div style="font-size:14px;line-height:1.5;color:#3E424A">Diagnostic settings send events to a Log Analytics workspace the security team owns, where workspace admins can't change them.</div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font-weight:600">Query the system table for investigations</div><div style="font-size:14px;line-height:1.5;color:#3E424A">system.access.audit covers every workspace and account-level events, and joins with lineage and billing tables.</div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font-weight:600">Logs are only useful if someone looks</div><div style="font-size:14px;line-height:1.5;color:#3E424A">Turn on verbose logging, deliver logs to the security team, and set alerts on admin changes, grants and failed sign-ins.</div></div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  state = { checked: {} };
+  whyBase = [
+    { risk: 'Each team configures its own workspace; one leaves public access open', fix: 'One baseline.', how: 'The same controls on every workspace, deployed from code.' },
+    { risk: 'Settings are changed by hand and silently drift', fix: 'Drift checks.', how: 'Scheduled scans compare each workspace to the baseline.' },
+    { risk: 'Unpatched cluster images run for months', fix: 'Compliance security profile.', how: 'Hardened images and automatic monthly updates.' },
+    { risk: 'An auditor asks you to prove regulated data is protected', fix: 'Documented controls.', how: 'A baseline gives you a list to evidence, control by control.' }
+  ];
+  whyAudit = [
+    { risk: 'Data leaks and nobody can say who accessed it', fix: 'Access events.', how: 'Every table read, grant and download is recorded with identity and IP.' },
+    { risk: 'An admin grants themselves access and removes it afterwards', fix: 'Permission change events.', how: 'The grant and the revoke are both logged permanently.' },
+    { risk: 'Compromised credentials are used from an unknown location', fix: 'Sign-in events + alerts.', how: 'Failed and unusual sign-ins raise alerts in real time.' },
+    { risk: 'Regulation requires years of evidence', fix: 'Retention you control.', how: 'Logs delivered to your own storage or Log Analytics.' }
+  ];
+  prof = [
+    { cap: 'Compute image', std: 'Standard Databricks Runtime image', csp: 'CIS-hardened image with security agents installed', csp_on: true },
+    { cap: 'Malware and file integrity monitoring', std: 'Off, unless enhanced security monitoring is enabled on its own', csp: 'On: antivirus, behaviour-based malware detection and file integrity monitoring', csp_on: true },
+    { cap: 'Vulnerability scanning', std: 'Not performed on cluster hosts', csp: 'Hosts are scanned regularly for vulnerabilities', csp_on: true },
+    { cap: 'Patching', std: 'Clusters pick up fixes when you restart them', csp: 'Automatic cluster update restarts compute in a monthly maintenance window', csp_on: true },
+    { cap: 'Monitoring events', std: 'None', csp: 'Written to audit logs (e.g. service names capsule8-alerts-dataplane, clamAVScanService-dataplane)', csp_on: true },
+    { cap: 'Available features', std: 'All GA and preview features', csp: 'Only features and runtimes supported for the profile', csp_on: false },
+    { cap: 'Can be turned off', std: 'Not applicable', csp: 'No. Permanent for the workspace', csp_on: false },
+    { cap: 'Cost', std: 'Included in the plan', csp: 'Enhanced Security and Compliance add-on charge', csp_on: false }
+  ];
+  W = { entra: ['ENTRA ID', '#E9EDFB', '#1E3499'], azure: ['AZURE', '#F2F8F8', '#0E6F78'], acct: ['DATABRICKS ACCOUNT', '#FBF3F1', '#C23E24'], ws: ['WORKSPACE', '#FBF3F1', '#C23E24'], uc: ['UNITY CATALOG', '#FBF3F1', '#C23E24'] };
+  base = [
+    { name: 'Identity', items: [
+      ['id1', 'Single sign-on with Entra ID; Conditional Access requires MFA for Azure Databricks', 'entra'],
+      ['id2', 'Identities synced to the account; no local workspace users', 'acct'],
+      ['id3', 'Few admins; PIM for Azure roles on the workspace', 'entra'],
+      ['id4', 'Personal access tokens disabled or limited to a short lifetime', 'ws'] ] },
+    { name: 'Network', items: [
+      ['nw1', 'VNet injection with secure cluster connectivity (no public IPs)', 'azure'],
+      ['nw2', 'Private Link for front-end and back-end, or IP access lists', 'azure'],
+      ['nw3', 'Outbound traffic routed through a firewall', 'azure'],
+      ['nw4', 'Storage and Key Vault firewalls with private endpoints', 'azure'] ] },
+    { name: 'Data', items: [
+      ['dt1', 'Unity Catalog on every workspace; no business data in DBFS root', 'acct'],
+      ['dt2', 'Storage reached through the Access Connector managed identity; shared key access disabled', 'azure'],
+      ['dt3', 'Grants to groups; row filters and column masks on sensitive columns', 'uc'],
+      ['dt4', 'Customer-managed keys where regulation requires key control', 'azure'] ] },
+    { name: 'Compute', items: [
+      ['cp1', 'Cluster policies for all users; unrestricted cluster creation removed', 'ws'],
+      ['cp2', 'Only Unity Catalog access modes (standard or dedicated)', 'ws'],
+      ['cp3', 'Auto-termination on all-purpose compute', 'ws'],
+      ['cp4', 'Compliance security profile on workspaces with regulated data', 'acct'] ] },
+    { name: 'Workspace settings', items: [
+      ['ws1', 'Results download and notebook export off where not needed', 'ws'],
+      ['ws2', 'Verbose audit logs on', 'ws'],
+      ['ws3', 'Secrets in Key Vault-backed scopes only', 'ws'] ] },
+    { name: 'Monitoring', items: [
+      ['mn1', 'Diagnostic settings deliver logs to Log Analytics or Sentinel', 'azure'],
+      ['mn2', 'Security team has SELECT on system.access', 'uc'],
+      ['mn3', 'Alerts on admin changes, grants and failed sign-ins', 'azure'],
+      ['mn4', 'Security Analysis Tool runs on a schedule', 'ws'] ] }
+  ];
+  qs = [
+    { key: 'grant', name: 'Who changed permissions?', context: 'Every GRANT and REVOKE in Unity Catalog is logged as updatePermissions, with the object and the changes requested.',
+      sql: "SELECT event_time, user_identity.email,\n       request_params.securable_full_name,\n       request_params.changes\nFROM system.access.audit\nWHERE service_name = 'unityCatalog'\n  AND action_name = 'updatePermissions'\n  AND event_date >= current_date() - 30\nORDER BY event_time DESC;",
+      kql: 'DatabricksUnityCatalog\n| where TimeGenerated > ago(30d)\n| where ActionName == "updatePermissions"\n| project TimeGenerated, Identity,\n          RequestParams, Response\n| order by TimeGenerated desc',
+      best: 'Either. Use B to alert the security team in real time; use A to review changes across all workspaces at once.' },
+    { key: 'table', name: 'Who accessed a sensitive table?', context: 'Audit events show who requested a table and its credentials. For which queries actually read it, join with the lineage system table.',
+      sql: "SELECT event_time, user_identity.email,\n       action_name, source_ip_address\nFROM system.access.audit\nWHERE service_name = 'unityCatalog'\n  AND action_name IN ('getTable',\n      'generateTemporaryTableCredential')\n  AND request_params.full_name_arg =\n      'sales_prod.gold.customers'\n  AND event_date >= current_date() - 7;",
+      kql: 'DatabricksUnityCatalog\n| where TimeGenerated > ago(7d)\n| where ActionName in ("getTable",\n    "generateTemporaryTableCredential")\n| where RequestParams has\n    "sales_prod.gold.customers"\n| project TimeGenerated, Identity,\n          ActionName, SourceIPAddress',
+      best: 'A. It sits next to system.access.table_lineage, which records the tables each query read and wrote.' },
+    { key: 'login', name: 'Failed sign-ins', context: 'Sign-in attempts to a workspace are logged by the accounts service. A spike of failures from one IP suggests a guessed or stolen credential.',
+      sql: "SELECT event_time, user_identity.email,\n       source_ip_address, action_name,\n       response.status_code\nFROM system.access.audit\nWHERE service_name = 'accounts'\n  AND action_name LIKE '%Login'\n  AND response.status_code <> 200\n  AND event_date >= current_date() - 1;",
+      kql: 'DatabricksAccounts\n| where TimeGenerated > ago(1d)\n| where ActionName endswith "Login"\n| extend status = toint(\n    parse_json(Response).statusCode)\n| where status != 200\n| summarize failures = count()\n    by SourceIPAddress, bin(TimeGenerated, 15m)',
+      best: 'B, with an alert rule. Also check Entra ID sign-in logs, where Conditional Access blocks are recorded.' },
+    { key: 'secret', name: 'Who read a secret?', context: 'Each call to dbutils.secrets.get is logged as getSecret with the scope and key name. The value is never logged.',
+      sql: "SELECT event_time, user_identity.email,\n       request_params.scope,\n       request_params.key\nFROM system.access.audit\nWHERE service_name = 'secrets'\n  AND action_name = 'getSecret'\n  AND request_params.scope = 'kv-erp-prod';",
+      kql: 'DatabricksSecrets\n| where ActionName == "getSecret"\n| where RequestParams has "kv-erp-prod"\n| project TimeGenerated, Identity,\n          RequestParams',
+      best: 'Either. For Key Vault-backed scopes, Key Vault\'s own diagnostic logs record the read as well.' },
+    { key: 'csp', name: 'Compliance profile alerts', context: 'On workspaces with the compliance security profile, the monitoring agents on cluster hosts report detections as audit events.',
+      sql: "SELECT event_time, workspace_id,\n       service_name, action_name,\n       request_params\nFROM system.access.audit\nWHERE service_name IN (\n    'capsule8-alerts-dataplane',\n    'clamAVScanService-dataplane')\n  AND event_date >= current_date() - 7;",
+      kql: '// Enable the matching log categories\n// in the workspace diagnostic setting\nDatabricksCapsule8Dataplane\n| union DatabricksClamAVScan\n| where TimeGenerated > ago(7d)\n| project TimeGenerated, ActionName,\n          RequestParams',
+      best: 'B routed to Sentinel, so a malware detection reaches the security operations team as an incident.' }
+  ];
+  renderVals() {
+    const mode = this.state.prof ?? this.props.defaultProfile ?? 'csp';
+    const csp = mode === 'csp';
+    const sel = (on) => ({ bg: on ? '#17191E' : '#fff', fg: on ? '#F4F2EC' : '#17191E' });
+    const ch = this.state.checked;
+    let done = 0, total = 0;
+    const layers = this.base.map(l => {
+      let d = 0;
+      const items = l.items.map(([id, text, w]) => {
+        const on = !!ch[id]; if (on) d++;
+        const [where, whereBg, whereFg] = this.W[w];
+        return { text, where, whereBg, whereFg, tick: on ? '✓' : '', boxBg: on ? '#2A6B3A' : '#fff', bg: on ? '#F2F8F3' : '#fff', border: on ? '#9CC7A6' : '#E6E3DA',
+          toggle: () => this.setState(s => ({ checked: { ...s.checked, [id]: !s.checked[id] } })) };
+      });
+      done += d; total += items.length;
+      return { name: l.name, progress: `${d}/${items.length}`, items };
+    });
+    const qk = this.state.q ?? 'grant';
+    const q = this.qs.find(x => x.key === qk) || this.qs[0];
+    return {
+      whyBase: this.whyBase, whyAudit: this.whyAudit,
+      showWhere: this.props.showWhere ?? true,
+      profOpts: [['standard', 'Standard workspace'], ['csp', 'With compliance security profile']].map(([v, label]) => ({ label, ...sel(v === mode), select: () => this.setState({ prof: v }) })),
+      profHead: csp ? 'WITH COMPLIANCE SECURITY PROFILE' : 'STANDARD WORKSPACE',
+      profRows: this.prof.map(r => ({ cap: r.cap, val: csp ? r.csp : r.std,
+        mark: csp ? (r.csp_on ? '+' : '!') : '–', fg: csp ? (r.csp_on ? '#2A6B3A' : '#A3321C') : '#5A5E66' })),
+      layers, doneCount: done, totalCount: total, donePct: Math.round(done / total * 100) + '%',
+      resetChecks: () => this.setState({ checked: {} }),
+      compare: [
+        { k: 'Configured in', a: 'Databricks. Account admin grants access to the system.access schema.', b: 'Azure portal, ARM or Terraform: a diagnostic setting on each workspace resource.' },
+        { k: 'Scope', a: 'All workspaces in the account, plus account-level events (e.g. account console changes).', b: 'One workspace per setting. Account-level events are not included.' },
+        { k: 'Requires', a: 'Unity Catalog-enabled workspace', b: 'Premium plan' },
+        { k: 'Latency', a: 'Typically within an hour; not for real-time alerting', b: 'Minutes; suitable for alerting' },
+        { k: 'Retention', a: '365 days, managed by Databricks', b: 'You decide: Log Analytics retention and archive, or storage lifecycle rules' },
+        { k: 'Query with', a: 'SQL in notebooks, dashboards and SQL alerts', b: 'KQL in Log Analytics; any tool for storage or Event Hubs' },
+        { k: 'Who controls it', a: 'Data platform team, inside Databricks', b: 'Security team, outside Databricks. Admins in Databricks cannot tamper with it' },
+        { k: 'Cost', a: 'No extra charge to store; compute to query', b: 'Log Analytics ingestion and retention charges' },
+        { k: 'Best for', a: 'Investigation, usage analysis, joining with lineage and billing tables', b: 'SIEM integration, real-time alerts, long-term regulatory retention' }
+      ],
+      columns: [
+        { c: 'event_time / event_date', d: 'When it happened (UTC)' },
+        { c: 'workspace_id', d: 'Which workspace; 0 for account-level events' },
+        { c: 'user_identity.email', d: 'Who: user or service principal' },
+        { c: 'service_name · action_name', d: 'What: e.g. unityCatalog · updatePermissions' },
+        { c: 'request_params', d: 'Details: object names, scope, changes' },
+        { c: 'source_ip_address', d: 'From where' },
+        { c: 'response.status_code', d: 'Result: 200 success, 403 denied' }
+      ],
+      qTabs: this.qs.map((x, i) => ({ n: String(i + 1).padStart(2, '0'), name: x.name, ...sel(x.key === q.key), select: () => this.setState({ q: x.key }) })),
+      q
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F2EC;color:#17191E;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#2F4FC9}a:hover{color:#17191E}
+*{box-sizing:border-box}
+</style>
+</helmet>
+<div style="max-width:1240px;margin:0 auto;padding:48px 28px 80px;display:flex;flex-direction:column;gap:56px">
+
+<header style="display:flex;flex-direction:column;gap:14px;max-width:840px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#5A5E66">Resilience primer · Azure + Databricks</div>
+<h1 style="margin:0;font-size:44px;line-height:1.08;font-weight:600;letter-spacing:-.02em;text-wrap:balance">High availability, backup and disaster recovery: staying up, and getting back</h1>
+<p style="margin:0;font-size:18px;line-height:1.55;color:#3E424A;text-wrap:pretty">Three different tools for three different failures. <strong>High availability</strong> rides through a zone failure. <strong>Backup</strong> undoes bad data. <strong>Disaster recovery</strong> moves the platform to another region. None of them replaces the others.</p>
+<div style="display:flex;flex-direction:column;gap:6px;border-left:2px solid #17191E;padding-left:14px;font-size:15px;line-height:1.5;color:#3E424A">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;color:#5A5E66">LEARNING OBJECTIVE</span>
+<span>Describe high availability, backup and disaster recovery; compare managed and self-built DR; define RTO, RPO and replication approaches; and outline DR runbooks and deploying a secondary region as code.</span>
+</div>
+</header>
+
+<section style="display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5A5E66">01</span>
+<h2 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-.01em">Why: failures come in different sizes</h2>
+</div>
+<p style="margin:0;font-size:16px;line-height:1.55;color:#3E424A;max-width:880px;text-wrap:pretty">Every data platform will eventually lose a machine, a zone, a table or a whole region. The question for each workload is how long the business can wait, and how much recent data it can afford to lose. The answer decides which protection you need and how much you spend on it.</p>
+
+<div style="background:#fff;border:1.5px solid #17191E;border-radius:6px;padding:22px;display:flex;flex-direction:column">
+<div style="display:grid;grid-template-columns:minmax(0,1.3fr) repeat(3,minmax(0,1fr));gap:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;padding-bottom:10px;border-bottom:1px solid #E6E3DA">
+<span style="color:#5A5E66">WHAT FAILS</span><span style="color:#0E6F78">HIGH AVAILABILITY</span><span style="color:#17191E">BACKUP</span><span style="color:#2F4FC9">DISASTER RECOVERY</span>
+</div>
+<sc-for list="{{ matrix }}" as="m" hint-placeholder-count="6">
+<div style="display:grid;grid-template-columns:minmax(0,1.3fr) repeat(3,minmax(0,1fr));gap:12px;padding:11px 0;border-bottom:1px solid #E6E3DA;font-size:14px;line-height:1.4;align-items:start">
+<span style="font-weight:600">{{ m.what }}</span>
+<sc-for list="{{ m.cells }}" as="c" hint-placeholder-count="3">
+<div style="display:flex;gap:8px;align-items:flex-start"><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;flex:none;width:14px;color:{{ c.fg }}">{{ c.mark }}</span><span style="color:#3E424A;font-size:13px">{{ c.note }}</span></div>
+</sc-for>
+</div>
+</sc-for>
+</div>
+
+<div style="background:#17191E;color:#F4F2EC;border-radius:6px;padding:18px 22px;display:flex;flex-direction:column;gap:6px">
+<div style="font-size:16px;font-weight:600">Disaster recovery does not fix bad data</div>
+<div style="font-size:14px;line-height:1.5;color:#C9CCD2">Replication copies whatever the primary holds. A corrupted or deleted table is corrupted or deleted in both regions within minutes. Only backups and Delta history take you back in time.</div>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5A5E66">02</span>
+<h2 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-.01em">High availability, backup and DR: what each one covers</h2>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;align-items:stretch">
+<sc-for list="{{ layers }}" as="l" hint-placeholder-count="3">
+<article style="background:#fff;border:1.5px solid {{ l.color }};border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;flex-direction:column;gap:4px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:{{ l.color }}">{{ l.tag }}</div>
+<h3 style="margin:0;font-size:20px;font-weight:600">{{ l.name }}</h3>
+<div style="font-size:14px;line-height:1.5;color:#3E424A">{{ l.summary }}</div>
+</div>
+<sc-for list="{{ l.items }}" as="i" hint-placeholder-count="4">
+<div style="display:flex;flex-direction:column;gap:2px;border-left:2px solid {{ l.dash }};padding-left:10px"><span style="font-size:14px;font-weight:600">{{ i.k }}</span><span style="font-size:13px;line-height:1.45;color:#3E424A">{{ i.v }}</span></div>
+</sc-for>
+<div style="margin-top:auto;padding-top:12px;border-top:1px solid #E6E3DA;font-size:13px;color:#3E424A"><span style="font-family:'IBM Plex Mono',monospace;color:{{ l.color }}">Your job:</span> {{ l.yours }}</div>
+</article>
+</sc-for>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5A5E66">03</span>
+<h2 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-.01em">RTO, RPO and replication approaches</h2>
+</div>
+
+<div style="background:#fff;border:1px solid #D9D5CA;border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:16px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;color:#5A5E66">TWO NUMBERS EVERY WORKLOAD NEEDS</div>
+<div style="display:grid;grid-template-columns:minmax(0,1fr) 4px minmax(0,1fr);align-items:stretch;gap:0">
+<div style="display:flex;flex-direction:column;gap:8px;padding:0 16px 0 0">
+<div style="height:10px;background:#FBF1EE;border:1.5px solid #A3321C;border-right:none;border-radius:3px 0 0 3px"></div>
+<div style="font-size:18px;font-weight:600;color:#A3321C">RPO · Recovery point objective</div>
+<div style="font-size:14px;line-height:1.5;color:#3E424A">How much recent data you can afford to lose, measured back from the moment of failure to the last copy in the secondary. <strong>“We can lose at most 15 minutes of orders.”</strong></div>
+</div>
+<div style="background:#17191E;border-radius:2px;position:relative"></div>
+<div style="display:flex;flex-direction:column;gap:8px;padding:0 0 0 16px">
+<div style="height:10px;background:#E9EDFB;border:1.5px solid #2F4FC9;border-left:none;border-radius:0 3px 3px 0"></div>
+<div style="font-size:18px;font-weight:600;color:#1E3499">RTO · Recovery time objective</div>
+<div style="font-size:14px;line-height:1.5;color:#3E424A">How long the business can wait for the service to work again, measured forward from the failure. <strong>“Finance dashboards back within 4 hours.”</strong></div>
+</div>
+</div>
+<div style="display:flex;justify-content:space-between;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5A5E66;flex-wrap:wrap"><span>← last replicated copy</span><span style="color:#17191E;font-weight:600">DISASTER</span><span>service restored →</span></div>
+<div style="font-size:13px;line-height:1.5;color:#3E424A;border-top:1px solid #E6E3DA;padding-top:12px">Databricks stores notebooks, jobs and metadata in its control plane, so its RPO covers changes to those. Your table data lives in your ADLS accounts; you set and meet the RPO for it.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font-size:15px;color:#3E424A">Lower RPO and RTO cost more. Select a strategy to compare typical targets.</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<sc-for list="{{ stratTabs }}" as="t" hint-placeholder-count="4">
+<button onClick="{{ t.select }}" style="cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:15px;padding:10px 16px;min-height:44px;border-radius:4px;border:1.5px solid #17191E;background:{{ t.bg }};color:{{ t.fg }};display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left"><span style="font-weight:600">{{ t.name }}</span><span style="font-size:12px;opacity:.8">{{ t.sub }}</span></button>
+</sc-for>
+</div>
+</div>
+<div style="background:#fff;border:1.5px solid #17191E;border-radius:6px;padding:24px;display:flex;flex-direction:column;gap:18px">
+<p style="margin:0;font-size:16px;line-height:1.55;color:#3E424A;max-width:860px;text-wrap:pretty">{{ st.summary }}</p>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+<div style="background:#FBF1EE;border-radius:4px;padding:16px;display:flex;flex-direction:column;gap:6px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#A3321C">TYPICAL RPO</span><span style="font-size:22px;font-weight:600">{{ st.rpo }}</span><div style="height:6px;background:#F0CFC7;border-radius:3px;overflow:hidden"><div style="height:100%;background:#A3321C;width:{{ st.rpoW }}"></div></div></div>
+<div style="background:#E9EDFB;border-radius:4px;padding:16px;display:flex;flex-direction:column;gap:6px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#1E3499">TYPICAL RTO</span><span style="font-size:22px;font-weight:600">{{ st.rto }}</span><div style="height:6px;background:#C3CDF0;border-radius:3px;overflow:hidden"><div style="height:100%;background:#2F4FC9;width:{{ st.rtoW }}"></div></div></div>
+<div style="background:#F7F5F0;border-radius:4px;padding:16px;display:flex;flex-direction:column;gap:6px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#5A5E66">RELATIVE COST</span><span style="font-size:22px;font-weight:600">{{ st.cost }}</span><div style="height:6px;background:#E6E3DA;border-radius:3px;overflow:hidden"><div style="height:100%;background:#17191E;width:{{ st.costW }}"></div></div></div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px">
+<div style="border:1px solid #D9D5CA;border-radius:4px;padding:16px;display:flex;flex-direction:column;gap:8px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#5A5E66">IN THE SECONDARY REGION</span><span style="font-size:14px;line-height:1.5">{{ st.secondary }}</span></div>
+<div style="border:1px solid #D9D5CA;border-radius:4px;padding:16px;display:flex;flex-direction:column;gap:8px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#5A5E66">GOOD FIT FOR</span><span style="font-size:14px;line-height:1.5">{{ st.fit }}</span></div>
+</div>
+<div style="font-size:12px;color:#5A5E66">Figures are typical ranges for planning, not guarantees. Measure your own in DR tests.</div>
+</div>
+
+<div style="background:#fff;border:1px solid #D9D5CA;border-radius:6px;padding:22px;display:flex;flex-direction:column">
+<div style="display:flex;flex-direction:column;gap:4px;padding-bottom:12px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;color:#5A5E66">REPLICATION APPROACHES · WHAT TO COPY, AND HOW</div>
+<div style="font-size:14px;color:#3E424A">A region failover needs more than data. Every row below must exist in the secondary.</div>
+</div>
+<div style="display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr) minmax(0,1.2fr);gap:14px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;padding:10px 0;border-top:1px solid #E6E3DA;border-bottom:1px solid #E6E3DA"><span style="color:#5A5E66">ASSET</span><span style="color:#2F4FC9">APPROACH</span><span style="color:#5A5E66">WATCH OUT FOR</span></div>
+<sc-for list="{{ repl }}" as="r" hint-placeholder-count="8">
+<div style="display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr) minmax(0,1.2fr);gap:14px;padding:11px 0;border-bottom:1px solid #E6E3DA;font-size:14px;line-height:1.45">
+<span style="font-weight:600">{{ r.a }}</span><span>{{ r.how }}</span><span style="color:#3E424A">{{ r.note }}</span>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5A5E66">04</span>
+<h2 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-.01em">Managed versus self-built disaster recovery</h2>
+</div>
+<p style="margin:0;font-size:16px;line-height:1.55;color:#3E424A;max-width:880px;text-wrap:pretty">Both start from the same place: a second workspace and metastore in another region, with the same identities. The difference is who builds and runs the replication and the failover. Databricks recommends managed DR, and self-built DR for what it doesn't cover.</p>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:16px;align-items:stretch">
+<div style="background:#fff;border:1.5px solid #2F4FC9;border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+<div style="font-size:20px;font-weight:600">Managed disaster recovery</div>
+<span style="background:#2F4FC9;color:#fff;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;padding:4px 8px;border-radius:3px">RECOMMENDED</span>
+</div>
+<div style="font-size:14px;line-height:1.5;color:#3E424A;text-wrap:pretty">Databricks runs the replication pipeline and the failover. You configure a <strong>failover group</strong> in the account console under Resilience.</div>
+<sc-for list="{{ managed }}" as="f" hint-placeholder-count="6"><div style="font-size:13px;line-height:1.45;border-left:2px solid #C3CDF0;padding-left:10px"><strong>{{ f.k }}</strong> {{ f.v }}</div></sc-for>
+</div>
+<div style="background:#fff;border:1px solid #D9D5CA;border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:14px">
+<div style="font-size:20px;font-weight:600">Self-built (DIY) disaster recovery</div>
+<div style="font-size:14px;line-height:1.5;color:#3E424A;text-wrap:pretty">You build replication with Deep Clone jobs, storage replication and CI/CD, and you write and run the failover scripts.</div>
+<sc-for list="{{ diy }}" as="f" hint-placeholder-count="6"><div style="font-size:13px;line-height:1.45;border-left:2px solid #D9D5CA;padding-left:10px"><strong>{{ f.k }}</strong> {{ f.v }}</div></sc-for>
+</div>
+</div>
+
+<div style="background:#fff;border:1px solid #D9D5CA;border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;flex-direction:column;gap:4px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;color:#5A5E66">NOT REPLICATED BY MANAGED DR · COVER THESE YOURSELF</div>
+<div style="font-size:14px;color:#3E424A">Most teams combine the two: managed DR for catalogs and workspace assets, code and DIY jobs for the rest.</div>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<sc-for list="{{ notRepl }}" as="n" hint-placeholder-count="10"><span style="font-size:13px;background:#FBF1EE;color:#17191E;border:1px solid #F0CFC7;border-radius:3px;padding:5px 9px">{{ n }}</span></sc-for>
+</div>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5A5E66">05</span>
+<h2 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-.01em">Disaster recovery runbooks</h2>
+<span style="font-size:15px;color:#5A5E66">Select a runbook. Steps shown for managed DR, with DIY notes.</span>
+</div>
+<p style="margin:0;font-size:16px;line-height:1.55;color:#3E424A;max-width:880px;text-wrap:pretty">A runbook is the written, step-by-step procedure someone follows under pressure at 3 a.m. Each step names who does it and how they know it worked. A runbook that has never been rehearsed is a guess.</p>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<sc-for list="{{ rbTabs }}" as="t" hint-placeholder-count="3">
+<button onClick="{{ t.select }}" style="cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:15px;padding:10px 16px;min-height:44px;border-radius:4px;border:1.5px solid #17191E;background:{{ t.bg }};color:{{ t.fg }};display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left"><span style="font-weight:600">{{ t.name }}</span><span style="font-size:12px;opacity:.8">{{ t.sub }}</span></button>
+</sc-for>
+</div>
+<div style="background:#fff;border:1px solid #D9D5CA;border-radius:6px;padding:24px;display:flex;flex-direction:column">
+<div style="display:grid;grid-template-columns:32px minmax(0,1.6fr) minmax(0,.7fr) minmax(0,1.1fr);gap:14px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#5A5E66;padding-bottom:10px;border-bottom:1px solid #E6E3DA"><span></span><span>ACTION</span><span>OWNER</span><span>DONE WHEN</span></div>
+<sc-for list="{{ rb.steps }}" as="s" hint-placeholder-count="7">
+<div style="display:grid;grid-template-columns:32px minmax(0,1.6fr) minmax(0,.7fr) minmax(0,1.1fr);gap:14px;padding:12px 0;border-bottom:1px solid #E6E3DA;font-size:14px;line-height:1.45;align-items:start">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;width:26px;height:26px;border:1.5px solid #2F4FC9;color:#2F4FC9;border-radius:50%;display:inline-flex;align-items:center;justify-content:center">{{ s.n }}</span>
+<div style="display:flex;flex-direction:column;gap:3px"><span style="font-weight:600">{{ s.do }}</span><span style="font-size:13px;color:#5A5E66">{{ s.diy }}</span></div>
+<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#3E424A">{{ s.who }}</span>
+<span style="color:#3E424A">{{ s.check }}</span>
+</div>
+</sc-for>
+<div style="padding-top:14px;font-size:14px;line-height:1.5;color:#3E424A"><strong style="color:#17191E">Note:</strong> {{ rb.note }}</div>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5A5E66">06</span>
+<h2 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-.01em">Deploying the secondary region as code</h2>
+</div>
+<p style="margin:0;font-size:16px;line-height:1.55;color:#3E424A;max-width:880px;text-wrap:pretty">If the secondary region was built by hand, it has drifted from the primary by the time you need it. Define both regions from the same code, with only region-specific values changing, and every pipeline run keeps them identical.</p>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;align-items:stretch">
+<sc-for list="{{ stages }}" as="g" hint-placeholder-count="3">
+<div style="background:#fff;border:1.5px solid {{ g.color }};border-radius:6px;padding:20px;display:flex;flex-direction:column;gap:10px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:{{ g.color }}">{{ g.tag }}</div>
+<div style="font-size:17px;font-weight:600">{{ g.name }}</div>
+<sc-for list="{{ g.items }}" as="i" hint-placeholder-count="4"><div style="font-size:13px;line-height:1.45;border-left:2px solid #E6E3DA;padding-left:10px">{{ i }}</div></sc-for>
+</div>
+</sc-for>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px;align-items:stretch">
+<div style="background:#fff;border:1px solid #D9D5CA;border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;flex-direction:column;gap:4px"><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;color:#0E6F78">TERRAFORM · ONE MODULE, TWO REGIONS</div><div style="font-size:14px;color:#3E424A">Azure infrastructure and Unity Catalog objects for each region.</div></div>
+<div style="background:#17191E;color:#E8E6E0;border-radius:4px;padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.65;overflow-x:auto;white-space:pre">{{ tfCode }}</div>
+</div>
+<div style="background:#fff;border:1px solid #D9D5CA;border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;flex-direction:column;gap:4px"><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;color:#C23E24">ASSET BUNDLE · SAME JOBS, PAUSED IN DR</div><div style="font-size:14px;color:#3E424A">Jobs and pipelines deployed to both workspaces on every release.</div></div>
+<div style="background:#17191E;color:#E8E6E0;border-radius:4px;padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.65;overflow-x:auto;white-space:pre">{{ dabCode }}</div>
+</div>
+</div>
+
+<div style="background:#fff;border:1.5px solid #17191E;border-radius:6px;padding:20px 22px;display:flex;flex-direction:column;gap:10px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;color:#5A5E66">THE PIPELINE</div>
+<div style="display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;font-size:13px">
+<sc-for list="{{ pipe }}" as="p" hint-placeholder-count="5">
+<div style="flex:1 1 150px;border:1px solid #D9D5CA;border-radius:3px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#5A5E66">{{ p.n }}</span><span style="font-weight:600">{{ p.t }}</span><span style="color:#5A5E66;font-size:12px">{{ p.d }}</span></div>
+</sc-for>
+</div>
+</div>
+</section>
+
+<section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;border-top:1px solid #D9D5CA;padding-top:28px">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font-weight:600">Set RTO and RPO per workload</div><div style="font-size:14px;line-height:1.5;color:#3E424A">Not everything needs active-active. Agree targets with the business, then pick the cheapest strategy that meets them.</div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font-weight:600">Back up as well as replicate</div><div style="font-size:14px;line-height:1.5;color:#3E424A">DR protects against losing a region. Delta history, Deep Clone backups and soft delete protect against losing data.</div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font-weight:600">Rehearse every quarter</div><div style="font-size:14px;line-height:1.5;color:#3E424A">Run a planned failover, measure the real RTO and RPO, and fix what the test finds. The runbook and code change with every release.</div></div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;defaultStrategy&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;backup&quot;,&quot;cold&quot;,&quot;managed&quot;,&quot;aa&quot;],&quot;default&quot;:&quot;managed&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;defaultRunbook&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;unplanned&quot;,&quot;test&quot;,&quot;back&quot;],&quot;default&quot;:&quot;unplanned&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = {};
+  strategies = [
+    { key: 'backup', name: 'Backup and restore', sub: 'Rebuild after the event',
+      summary: 'Nothing runs in the secondary region. Infrastructure is redeployed from code after the disaster, and data is restored from Deep Clone backups or geo-replicated storage.',
+      rpo: 'Hours to 1 day', rpoW: '90%', rto: 'Hours to days', rtoW: '95%', cost: 'Low', costW: '15%',
+      secondary: 'Backup storage only. Terraform and bundles ready to run.', fit: 'Internal reporting and development workspaces that can wait a day.' },
+    { key: 'cold', name: 'Active-passive, self-built', sub: 'Warm copy, scheduled sync',
+      summary: 'A secondary workspace is deployed and kept in sync by CI/CD and scheduled Deep Clone jobs. Compute stays off until failover.',
+      rpo: 'Sync interval, e.g. 1–4 h', rpoW: '55%', rto: '1–4 hours', rtoW: '50%', cost: 'Medium', costW: '40%',
+      secondary: 'Workspace, metastore and storage deployed; jobs paused; data refreshed on a schedule.', fit: 'Most production analytics with an RTO of a few hours.' },
+    { key: 'managed', name: 'Active-passive, managed DR', sub: 'Continuous replication',
+      summary: 'Databricks continuously replicates catalogs, managed table data and workspace assets. Failover is a button in the account console and clients follow a stable URL.',
+      rpo: 'Minutes (replication point)', rpoW: '20%', rto: 'Minutes to 1 hour', rtoW: '20%', cost: 'Medium–high', costW: '65%',
+      secondary: 'Read-only replicas of in-scope catalogs and assets; compute unavailable until failover.', fit: 'Business-critical workloads that must be back within the hour.' },
+    { key: 'aa', name: 'Active-active', sub: 'Both regions run all the time',
+      summary: 'Every job runs in both regions and is only complete when both succeed. Users can switch region at any time.',
+      rpo: 'Near zero', rpoW: '5%', rto: 'Near zero to minutes', rtoW: '6%', cost: 'High (about 2× compute)', costW: '100%',
+      secondary: 'A second full production deployment with strict CI/CD so neither side changes on its own.', fit: 'The few workloads where any downtime or data loss is unacceptable.' }
+  ];
+  runbooks = [
+    { key: 'unplanned', name: 'Unplanned failover', sub: 'Primary region is down',
+      note: 'In an unplanned failover, data written after the last replication point can be lost. Record the gap and reconcile it after failback.',
+      steps: [
+        ['Declare the incident and open the bridge', 'Same for DIY.', 'Incident lead', 'Azure Service Health confirms the outage; expected wait exceeds RTO.'],
+        ['Confirm the secondary region is healthy', 'Same for DIY.', 'Platform admin', 'Service Health and a test sign-in to the secondary workspace succeed.'],
+        ['Check the replication point', 'DIY: check the last successful Deep Clone and sync job times.', 'Platform admin', 'Data-loss window is known and within RPO, or escalated.'],
+        ['Fail over: Resilience → Failover groups → Fail over', 'DIY: run the failover script; update DNS or client URLs.', 'Platform admin', 'Failover group leaves FAILING_OVER; stable URL points to secondary.'],
+        ['Start compute and resume job schedules', 'DIY: set job concurrency above zero; raise pool minimums.', 'Data engineering', 'Clusters and SQL warehouses running; critical jobs succeed.'],
+        ['Restore what isn\'t replicated', 'Deploy pipelines, secrets and models from code; restart streams from replicated checkpoints.', 'Data engineering', 'Streaming tables and pipelines running in the secondary.'],
+        ['Repoint and announce', 'Clients not on the stable URL: update JDBC/ODBC, BI and schedulers.', 'Incident lead', 'Owners of downstream systems confirm they are connected.'] ] },
+    { key: 'test', name: 'Planned DR test', sub: 'Quarterly rehearsal',
+      note: 'Record the measured RTO and RPO after each test and compare them with the targets. Every gap becomes a task.',
+      steps: [
+        ['Announce the test window', 'Same for DIY.', 'Incident lead', 'Users and downstream owners acknowledged.'],
+        ['Stop compute in the primary', 'Same for DIY.', 'Platform admin', 'All clusters terminated and SQL warehouses stopped.'],
+        ['Wait for replication to catch up', 'DIY: run a final Deep Clone and sync job.', 'Platform admin', 'Replication point within seconds of when writes stopped.'],
+        ['Fail over to the secondary', 'DIY: run the failover script.', 'Platform admin', 'Stable URL resolves to the secondary; start time recorded.'],
+        ['Run validation', 'Same for DIY.', 'Data engineering', 'Row counts, critical jobs and dashboards match expected results.'],
+        ['Fail back and record results', 'Same for DIY.', 'Incident lead', 'Measured RTO and RPO logged; fixes raised as tickets.'] ] },
+    { key: 'back', name: 'Failback', sub: 'Return to the primary',
+      note: 'After a managed DR failover, replication already runs in reverse, so failback is the same procedure with the regions swapped.',
+      steps: [
+        ['Confirm the primary region is restored', 'Same for DIY.', 'Incident lead', 'Service Health shows resolved; test sign-in to the primary works.'],
+        ['Schedule a maintenance window', 'Same for DIY.', 'Incident lead', 'Users notified of the switch-back time.'],
+        ['Stop compute in the secondary', 'Same for DIY.', 'Platform admin', 'No jobs writing in the secondary.'],
+        ['Let reversed replication catch up', 'DIY: sync new data and changed assets back to the primary.', 'Platform admin', 'Replication point current; audit logs show no missing writes.'],
+        ['Fail over back to the original region', 'DIY: run the failback script; restore URLs.', 'Platform admin', 'Stable URL points at the primary.'],
+        ['Start compute, resume schedules, repoint', 'Same for DIY.', 'Data engineering', 'Production running in the primary; DR state is ACTIVE again.'] ] }
+  ];
+  renderVals() {
+    const sel = (on) => ({ bg: on ? '#17191E' : '#fff', fg: on ? '#F4F2EC' : '#17191E' });
+    const sk = this.state.strat ?? this.props.defaultStrategy ?? 'managed';
+    const st = this.strategies.find(x => x.key === sk) || this.strategies[2];
+    const rk = this.state.rb ?? this.props.defaultRunbook ?? 'unplanned';
+    const rbRaw = this.runbooks.find(x => x.key === rk) || this.runbooks[0];
+    const Y = { mark: '✓', fg: '#2A6B3A' }, N = { mark: '✕', fg: '#A3321C' }, P = { mark: '~', fg: '#8A6A12' }, D = { mark: '–', fg: '#A9ADB6' };
+    const cell = (t, note) => ({ ...t, note });
+    return {
+      matrix: [
+        { what: 'A cluster node or VM fails', cells: [cell(Y, 'Cluster manager replaces the node from another zone'), cell(D, 'Not needed'), cell(D, 'Not needed')] },
+        { what: 'An availability zone goes down', cells: [cell(Y, 'Control plane recovers in about 15 minutes; ZRS storage keeps data'), cell(D, 'Not needed'), cell(D, 'Not needed')] },
+        { what: 'A bad job overwrites a table', cells: [cell(N, 'The bad write is highly available too'), cell(Y, 'RESTORE to an earlier Delta version'), cell(N, 'Replicated to the secondary')] },
+        { what: 'Someone drops a table', cells: [cell(N, 'Dropped in every zone'), cell(Y, 'UNDROP within 7 days, or restore a Deep Clone'), cell(N, 'The drop replicates too')] },
+        { what: 'Ransomware or malicious deletion', cells: [cell(N, 'No protection'), cell(Y, 'Immutable or soft-deleted backups the attacker can\'t reach'), cell(N, 'Deletions replicate')] },
+        { what: 'The whole region is unavailable', cells: [cell(N, 'All zones are in the region'), cell(P, 'Only if backups are stored in another region'), cell(Y, 'Fail over to the secondary region')] }
+      ],
+      layers: [
+        { tag: 'IN ONE REGION · AUTOMATIC', name: 'High availability', color: '#0E6F78', dash: '#CFE3E5',
+          summary: 'Keeps running through the loss of a machine or one availability zone, usually without anyone acting.',
+          items: [
+            { k: 'Control plane', v: 'Core services are multi-zonal and recover from a zone failure in about 15 minutes, in regions with multiple zones.' },
+            { k: 'Compute', v: 'Worker nodes come from several zones and are replaced if lost. Losing the driver restarts the cluster and job.' },
+            { k: 'Storage', v: 'Choose ZRS or GZRS for ADLS and workspace storage so data survives a zone loss.' },
+            { k: 'Jobs', v: 'Task retries and idempotent writes turn a restart into a short delay.' } ],
+          yours: 'pick a multi-zone region and zone-redundant storage.' },
+        { tag: 'POINT IN TIME · UNDO', name: 'Backup', color: '#17191E', dash: '#E6E3DA',
+          summary: 'Takes data back to a moment before something went wrong. The only protection against corruption and deletion.',
+          items: [
+            { k: 'Delta time travel', v: 'Query or RESTORE earlier versions. History lasts only until VACUUM removes old files (7 days by default).' },
+            { k: 'UNDROP', v: 'Recovers a dropped Unity Catalog managed table within 7 days.' },
+            { k: 'Deep Clone', v: 'Scheduled full or incremental copy of a table to a separate backup location or region.' },
+            { k: 'Storage protection', v: 'Soft delete, versioning and immutability policies on the backup storage account.' } ],
+          yours: 'set retention, schedule backups and test restores.' },
+        { tag: 'SECOND REGION · FAILOVER', name: 'Disaster recovery', color: '#2F4FC9', dash: '#C3CDF0',
+          summary: 'Moves the platform to another region when the primary region is lost or unusable.',
+          items: [
+            { k: 'Secondary workspace', v: 'Same account, same Entra ID identities, its own metastore and storage.' },
+            { k: 'Replication', v: 'Data, metadata, code and configuration kept in step with the primary.' },
+            { k: 'Failover', v: 'A decision, a runbook and a procedure that redirect users and jobs.' },
+            { k: 'Region choice', v: 'Confirm every service and VM type you use is available in the secondary.' } ],
+          yours: 'choose a strategy, build it, and rehearse it.' }
+      ],
+      stratTabs: this.strategies.map(x => ({ name: x.name, sub: x.sub, ...sel(x.key === st.key), select: () => this.setState({ strat: x.key }) })),
+      st,
+      repl: [
+        { a: 'UC managed tables', how: 'Managed DR, or scheduled DEEP CLONE into the secondary catalog.', note: 'Clone runs define your RPO. Tables with row filters or column masks aren\'t replicated by managed DR.' },
+        { a: 'External data and raw files', how: 'Azure Storage replication (GRS/GZRS, object replication) or copy jobs; convert to Delta and clone where possible.', note: 'Don\'t rely on GRS for the workspace root storage account.' },
+        { a: 'Streaming checkpoints', how: 'Keep in your own storage and replicate alongside the data they describe.', note: 'Paths inside checkpoints may point at the primary; plan the restart point and de-duplicate.' },
+        { a: 'Catalogs, schemas, grants', how: 'Managed DR, or Terraform applied to both metastores.', note: 'External locations and storage credentials must be created in the secondary yourself.' },
+        { a: 'Notebooks, jobs, clusters', how: 'Managed DR asset replication, or Asset Bundles deployed to both workspaces.', note: 'Keep secondary jobs paused and pools at zero idle until failover.' },
+        { a: 'Identities', how: 'Same Entra ID tenant; automatic identity management or SCIM at account level.', note: 'Nothing to copy if identities are account-level. Local workspace users break DR.' },
+        { a: 'Secrets and keys', how: 'A Key Vault in each region, populated by your secret pipeline.', note: 'Managed DR doesn\'t replicate secrets. Some values differ by region.' },
+        { a: 'Network and Azure resources', how: 'Terraform or Bicep with region variables.', note: 'Private endpoints, firewalls and DNS for the secondary must exist before the event.' }
+      ],
+      managed: [
+        { k: 'Replicates:', v: 'Unity Catalog metadata, managed table data, views, functions and grants; optionally notebooks, jobs, warehouses, clusters, dashboards and files with their ACLs.' },
+        { k: 'Stable URL:', v: 'one address that always points at the current primary, so UI, JDBC/ODBC and API clients keep working after failover.' },
+        { k: 'Failover:', v: 'from the account console, in minutes. Replication then reverses automatically.' },
+        { k: 'Monitoring:', v: 'the replication point shows how current the secondary is; system.replication.states tracks RPO and errors.' },
+        { k: 'Requires:', v: 'Premium plan and the Mission Critical add-on on both workspaces, serverless compute, a secondary metastore. Access is gated through your account team.' },
+        { k: 'Trade-off:', v: 'secondary catalogs are read-only and its compute is unavailable while replication runs.' }
+      ],
+      diy: [
+        { k: 'Data:', v: 'Deep Clone jobs on a schedule, plus Azure Storage replication for non-Delta files.' },
+        { k: 'Code and config:', v: 'Terraform and Asset Bundles co-deploy to both regions on every release.' },
+        { k: 'Failover:', v: 'your own scripts to pause the primary, start the secondary and change URLs.' },
+        { k: 'Needed for:', v: 'active-active, cross-cloud DR, anything managed DR doesn\'t replicate, or fine control of the pipeline.' },
+        { k: 'Cost:', v: 'no add-on, but engineering time to build, maintain and test the tooling.' },
+        { k: 'Risk:', v: 'gaps appear silently when new object types are added and the scripts aren\'t updated.' }
+      ],
+      notRepl: ['Lakeflow pipelines', 'Materialized views', 'Streaming tables', 'Structured Streaming outside pipelines', 'Secrets', 'ML models', 'Model serving endpoints', 'Vector search indexes', 'Delta shares', 'Managed volume data', 'Published dashboards', 'External locations and storage credentials'],
+      rbTabs: this.runbooks.map(x => ({ name: x.name, sub: x.sub, ...sel(x.key === rbRaw.key), select: () => this.setState({ rb: x.key }) })),
+      rb: { note: rbRaw.note, steps: rbRaw.steps.map(([d, diy, who, check], i) => ({ n: i + 1, do: d, diy, who, check })) },
+      stages: [
+        { tag: 'ALWAYS DEPLOYED', name: 'Built before any incident', color: '#0E6F78', items: ['VNet, subnets, private endpoints, firewall rules', 'Workspace, metastore, Access Connector', 'Storage accounts, external locations, storage credentials', 'Key Vault, secret scopes, cluster policies, group assignments'] },
+        { tag: 'DEPLOYED, IDLE', name: 'Present but not running', color: '#2F4FC9', items: ['Jobs with schedules paused (or concurrency zero)', 'Pools with zero idle instances', 'Clusters terminated, SQL warehouses stopped', 'Dashboards and alerts pointing at secondary catalogs'] },
+        { tag: 'AT FAILOVER', name: 'Switched on by the runbook', color: '#C23E24', items: ['Unpause schedules, start compute', 'Restart streams from replicated checkpoints', 'Point ingestion at secondary storage', 'Repoint clients not using the stable URL'] }
+      ],
+      tfCode: 'module "platform_primary" {\n  source   = "./modules/databricks-platform"\n  region   = "westeurope"\n  prefix   = "prod-weu"\n  is_dr    = false\n}\n\nmodule "platform_secondary" {\n  source   = "./modules/databricks-platform"\n  region   = "northeurope"\n  prefix   = "prod-neu"\n  is_dr    = true   # pools min_idle = 0\n}',
+      dabCode: 'bundle:\n  name: sales-pipelines\n\ntargets:\n  prod:\n    workspace:\n      host: https://adb-111.azuredatabricks.net\n  dr:\n    workspace:\n      host: https://adb-222.azuredatabricks.net\n    resources:\n      jobs:\n        nightly_sales:\n          schedule:\n            pause_status: PAUSED',
+      pipe: [
+        { n: '1', t: 'Merge to main', d: 'Reviewed change' },
+        { n: '2', t: 'terraform apply', d: 'Both regions' },
+        { n: '3', t: 'bundle deploy -t prod', d: 'Primary workspace' },
+        { n: '4', t: 'bundle deploy -t dr', d: 'Secondary, paused' },
+        { n: '5', t: 'Drift check', d: 'Plan shows no changes' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

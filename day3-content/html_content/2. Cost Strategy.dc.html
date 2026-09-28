@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/industry-d78e342e-fb0e-4b38-b2ca-5e5c417c81e8/styles.css">
+<script src="_ds/industry-d78e342e-fb0e-4b38-b2ca-5e5c417c81e8/_ds_bundle.js"></script>
+<style>
+body{margin:0;-webkit-font-smoothing:antialiased}
+a{color:var(--color-accent-700)}a:hover{color:var(--color-accent-800)}
+input[type=range]{accent-color:var(--color-accent);width:100%}
+</style>
+</helmet>
+<div style="min-height:100vh">
+  <header style="background:var(--color-accent-900);color:var(--color-bg);padding:56px 32px 48px">
+    <div style="max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:28px">
+      <div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-family:var(--font-heading);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-300)">
+        <span>Azure Databricks Advisory</span>
+      </div>
+      <h1 style="margin:0;font-family:var(--font-heading);font-size:clamp(34px,5vw,56px);line-height:1.05;font-weight:600;letter-spacing:-.02em;max-width:820px;text-wrap:balance">Cost Management &amp; Cost Optimisation in Azure Databricks</h1>
+      <p style="margin:0;max-width:680px;font-size:18px;line-height:1.55;color:var(--color-accent-200);text-wrap:pretty">A visual guide to the framework and roadmap: where spend comes from, how to control it, which levers reduce it, and in what order.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;background:var(--color-accent-800);border:1px solid var(--color-accent-800);margin-top:8px">
+        <div style="background:var(--color-accent-900);padding:20px;display:flex;flex-direction:column;gap:6px"><span style="font-size:32px;font-weight:600;color:var(--color-bg)">20–40%</span><span style="font-size:14px;color:var(--color-accent-300)">of spend typically avoidable</span></div>
+        <div style="background:var(--color-accent-900);padding:20px;display:flex;flex-direction:column;gap:6px"><span style="font-size:32px;font-weight:600;color:var(--color-bg)">40–60%</span><span style="font-size:14px;color:var(--color-accent-300)">of total spend is Azure infrastructure</span></div>
+        <div style="background:var(--color-accent-900);padding:20px;display:flex;flex-direction:column;gap:6px"><span style="font-size:32px;font-weight:600;color:var(--color-bg)">20–35%</span><span style="font-size:14px;color:var(--color-accent-300)">saved in the first 8 weeks (Phases 1–2)</span></div>
+      </div>
+      <nav style="display:flex;flex-wrap:wrap;gap:8px 20px;font-size:14px">
+        <a href="#s1" style="color:var(--color-accent-200);text-decoration:none">Cost model</a>
+        <a href="#s2" style="color:var(--color-accent-200);text-decoration:none">Management framework</a>
+        <a href="#s5" style="color:var(--color-accent-200);text-decoration:none">Optimisation levers</a>
+        <a href="#s7" style="color:var(--color-accent-200);text-decoration:none">Roadmap</a>
+        <a href="#s8" style="color:var(--color-accent-200);text-decoration:none">Expected savings</a>
+        <a href="#s10" style="color:var(--color-bg);text-decoration:none;font-weight:600">Savings calculator →</a>
+      </nav>
+    </div>
+  </header>
+
+  <main style="max-width:1120px;margin:0 auto;padding:0 32px 96px;display:flex;flex-direction:column">
+
+    <section id="s1" style="padding:72px 0 0;display:flex;flex-direction:column;gap:24px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:var(--font-heading);font-size:13px;color:var(--color-accent-700);font-weight:600">01 · COST MODEL</span>
+        <h2 style="margin:0;font-family:var(--font-heading);font-size:32px;font-weight:600;letter-spacing:-.01em">Every invoice has two meters</h2>
+        <p style="margin:0;max-width:720px;font-size:16px;line-height:1.6;color:var(--color-neutral-700);text-wrap:pretty">Most cost reviews look only at the DBU line, because that is what the Databricks usage dashboard shows. Azure infrastructure is frequently 40–60% of the total.</p>
+      </div>
+      <div class="blueprint" style="background:var(--color-bg);border:1px solid var(--color-divider);padding:28px;display:flex;flex-direction:column;gap:24px"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
+          <div style="display:flex;border:1px solid var(--color-divider)">
+            <sc-for list="{{ modelTabs }}" as="t" hint-placeholder-count="2">
+              <button onClick="{{ t.onClick }}" style="border:0;padding:10px 18px;font:inherit;font-size:14px;font-weight:500;cursor:pointer;background:{{ t.bg }};color:{{ t.fg }}">{{ t.label }}</button>
+            </sc-for>
+          </div>
+          <sc-if value="{{ isClassic }}" hint-placeholder-val="{{ true }}">
+            <label style="display:flex;align-items:center;gap:12px;font-size:14px;color:var(--color-neutral-700);min-width:260px">
+              <span style="white-space:nowrap">Azure infra share</span>
+              <input type="range" min="40" max="60" value="{{ infra }}" onChange="{{ setInfra }}">
+              <span style="font-family:var(--font-heading);color:var(--color-accent-900);width:40px">{{ infra }}%</span>
+            </label>
+          </sc-if>
+        </div>
+        <sc-if value="{{ isClassic }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:20px">
+            <div style="display:flex;height:72px">
+              <div style="width:{{ dbuPct }}%;background:var(--color-neutral-700);color:var(--color-bg);padding:12px 16px;display:flex;flex-direction:column;justify-content:center;gap:2px;transition:width .3s"><span style="font-weight:600">Databricks Units</span><span style="font-family:var(--font-heading);font-size:13px">{{ dbuPct }}%</span></div>
+              <div style="flex:1;background:var(--color-accent);color:var(--color-bg);padding:12px 16px;display:flex;flex-direction:column;justify-content:center;gap:2px"><span style="font-weight:600">Azure infrastructure</span><span style="font-family:var(--font-heading);font-size:13px">{{ infra }}%</span></div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px">
+              <div style="border-top:3px solid var(--color-neutral-700);padding-top:14px;display:flex;flex-direction:column;gap:8px">
+                <span style="font-size:13px;color:var(--color-neutral-700)">Billed by Databricks, via the Azure Marketplace</span>
+                <span style="font-size:15px;line-height:1.55">Driven by compute type (Jobs, All-Purpose, SQL Warehouse, Serverless), the runtime used, and hours running.</span>
+              </div>
+              <div style="border-top:3px solid var(--color-accent);padding-top:14px;display:flex;flex-direction:column;gap:8px">
+                <span style="font-size:13px;color:var(--color-neutral-700)">Billed by Microsoft Azure directly</span>
+                <span style="font-size:15px;line-height:1.55">Driven by VM family and size, managed disks, storage (ADLS), networking, NAT Gateway and egress.</span>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isServerless }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:20px">
+            <div style="display:flex;height:72px">
+              <div style="flex:1;background:linear-gradient(90deg,var(--color-neutral-700) 0%,var(--color-neutral-700) 100%);color:var(--color-bg);padding:12px 16px;display:flex;flex-direction:column;justify-content:center;gap:2px"><span style="font-weight:600">Single DBU-based rate</span><span style="font-family:var(--font-heading);font-size:13px">compute included</span></div>
+            </div>
+            <p style="margin:0;font-size:15px;line-height:1.6;max-width:760px;text-wrap:pretty">Serverless compute (SQL, jobs and notebooks) collapses both meters into one rate. Attribution gets simpler, and the optimisation levers shift from infrastructure tuning toward workload efficiency and warehouse sizing.</p>
+          </div>
+        </sc-if>
+        <div style="background:var(--color-surface);padding:14px 16px;font-size:14px;line-height:1.55;color:var(--color-neutral-700)">A complete view requires joining Databricks usage data with the Azure Cost Management export for the same subscriptions.</div>
+      </div>
+    </section>
+
+    <section id="s2" style="padding:72px 0 0;display:flex;flex-direction:column;gap:24px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:var(--font-heading);font-size:13px;color:var(--color-accent-700);font-weight:600">02 · COST MANAGEMENT FRAMEWORK</span>
+        <h2 style="margin:0;font-family:var(--font-heading);font-size:32px;font-weight:600;letter-spacing:-.01em">Visibility and control come first</h2>
+        <p style="margin:0;max-width:720px;font-size:16px;line-height:1.6;color:var(--color-neutral-700);text-wrap:pretty">Know where spend originates, attribute it correctly, and prevent uncontrolled growth. Visibility and accountability alone typically produce a 10–20% reduction, before any technical optimisation.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0">
+        <div style="background:var(--color-accent-700);color:var(--color-bg);padding:14px 20px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-weight:500"><span>Cost Optimisation programme (Section 4)</span><span style="font-family:var(--font-heading);font-size:13px">built on ↓</span></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1px;background:var(--color-divider);border:1px solid var(--color-divider)">
+          <sc-for list="{{ pillars }}" as="p" hint-placeholder-count="4">
+            <div style="background:var(--color-bg);padding:22px;display:flex;flex-direction:column;gap:12px">
+              <span style="font-family:var(--font-heading);font-size:12px;color:var(--color-accent-700)">{{ p.num }}</span>
+              <span style="font-size:18px;font-weight:600">{{ p.title }}</span>
+              <span style="font-size:14px;line-height:1.55;color:var(--color-neutral-700)">{{ p.body }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <section id="s3" style="padding:72px 0 0;display:flex;flex-direction:column;gap:24px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:var(--font-heading);font-size:13px;color:var(--color-accent-700);font-weight:600">03 · TAGGING STANDARD</span>
+        <h2 style="margin:0;font-family:var(--font-heading);font-size:32px;font-weight:600;letter-spacing:-.01em">Enforce tags through policy, not convention</h2>
+        <p style="margin:0;max-width:720px;font-size:16px;line-height:1.6;color:var(--color-neutral-700);text-wrap:pretty">The single highest-leverage governance control: it lets every downstream report attribute cost to a team, project or environment automatically.</p>
+        <a href="Tagging Strategy.dc.html" style="font-size:15px;font-weight:600;text-decoration:none">See the full tagging strategy for one use case →</a>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;align-items:stretch">
+        <div class="blueprint" style="background:var(--color-bg);border:1px solid var(--color-divider);padding:22px;display:flex;flex-direction:column;gap:12px"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <span style="font-size:13px;color:var(--color-neutral-700);font-weight:500">Required tags</span>
+          <sc-for list="{{ tags }}" as="t" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;gap:2px;padding:10px 12px;background:var(--color-accent-100)">
+              <span style="font-family:var(--font-heading);font-size:14px;font-weight:600;color:var(--color-accent-700)">{{ t.key }}</span>
+              <span style="font-size:13px;color:var(--color-neutral-700)">{{ t.desc }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="background:var(--color-accent-900);color:var(--color-bg);padding:22px;display:flex;flex-direction:column;justify-content:center;gap:12px">
+          <span style="font-family:var(--font-heading);font-size:12px;color:var(--color-accent-300)">ENFORCED BY</span>
+          <span style="font-size:22px;font-weight:600">Cluster policies</span>
+          <span style="font-size:14px;line-height:1.55;color:var(--color-accent-200)">Clusters cannot launch without the mandated tags, so they propagate consistently to both billing sources.</span>
+          <span style="font-size:28px;color:var(--color-accent-300)">→</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div style="flex:1;background:var(--color-bg);border:1px solid var(--color-divider);border-left:0;box-shadow:inset 3px 0 0 var(--color-neutral-700);padding:22px;display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:13px;color:var(--color-neutral-700)">Databricks</span>
+            <span style="font-size:17px;font-weight:600">Usage records</span>
+            <span style="font-family:var(--font-heading);font-size:13px;color:var(--color-neutral-700)">system.billing.usage</span>
+          </div>
+          <div style="flex:1;background:var(--color-bg);border:1px solid var(--color-divider);border-left:0;box-shadow:inset 3px 0 0 var(--color-accent);padding:22px;display:flex;flex-direction:column;gap:8px">
+            <span style="font-size:13px;color:var(--color-neutral-700)">Azure</span>
+            <span style="font-size:17px;font-weight:600">VMs and managed disks</span>
+            <span style="font-family:var(--font-heading);font-size:13px;color:var(--color-neutral-700)">Azure Cost Management</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s4" style="padding:72px 0 0;display:flex;flex-direction:column;gap:24px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:var(--font-heading);font-size:13px;color:var(--color-accent-700);font-weight:600">04 · VISIBILITY PIPELINE</span>
+        <h2 style="margin:0;font-family:var(--font-heading);font-size:32px;font-weight:600;letter-spacing:-.01em">One reconciled view of spend</h2>
+        <p style="margin:0;max-width:720px;font-size:16px;line-height:1.6;color:var(--color-neutral-700);text-wrap:pretty">System tables give native, queryable billing data. Join them with the Azure export, reconcile monthly, and track unit economics so cost trends can be separated from usage growth.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+        <sc-for list="{{ pipeline }}" as="s" hint-placeholder-count="4">
+          <div class="blueprint" style="background:var(--color-bg);border:1px solid var(--color-divider);border-top:3px solid {{ s.color }};padding:20px;display:flex;flex-direction:column;gap:10px"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+            <span style="font-family:var(--font-heading);font-size:12px;color:var(--color-neutral-700)">STEP {{ s.num }}</span>
+            <span style="font-size:17px;font-weight:600">{{ s.title }}</span>
+            <sc-for list="{{ s.items }}" as="i" hint-placeholder-count="2">
+              <span style="font-size:13px;line-height:1.5;color:var(--color-neutral-700);font-family:{{ s.font }}">{{ i }}</span>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px">
+        <div class="blueprint" style="background:var(--color-bg);border:1px solid var(--color-divider);padding:20px;display:flex;flex-direction:column;gap:8px"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i><span style="font-size:15px;font-weight:600">Budgets &amp; anomaly alerts</span><span style="font-size:14px;line-height:1.55;color:var(--color-neutral-700)">Azure Cost Management budgets and alerts per subscription and resource group.</span></div>
+        <div class="blueprint" style="background:var(--color-bg);border:1px solid var(--color-divider);padding:20px;display:flex;flex-direction:column;gap:8px"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i><span style="font-size:15px;font-weight:600">Serverless budget policies</span><span style="font-size:14px;line-height:1.55;color:var(--color-neutral-700)">Attribute and cap serverless usage, which falls outside VM-based controls.</span></div>
+        <div class="blueprint" style="background:var(--color-bg);border:1px solid var(--color-divider);padding:20px;display:flex;flex-direction:column;gap:8px"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i><span style="font-size:15px;font-weight:600">Compute policies</span><span style="font-size:14px;line-height:1.55;color:var(--color-neutral-700)">Only admins launch unrestricted clusters. Everyone else is capped on workers and VM families, with mandatory tags and auto-termination.</span></div>
+      </div>
+    </section>
+
+    <section id="s5" style="padding:72px 0 0;display:flex;flex-direction:column;gap:24px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:var(--font-heading);font-size:13px;color:var(--color-neutral-700);font-weight:600">05 · COST OPTIMISATION LEVERS</span>
+        <h2 style="margin:0;font-family:var(--font-heading);font-size:32px;font-weight:600;letter-spacing:-.01em">Four groups, in order of typical impact</h2>
+      </div>
+      <div class="blueprint" style="background:var(--color-bg);border:1px solid var(--color-divider);display:flex;flex-direction:column"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));border-bottom:1px solid var(--color-divider)">
+          <sc-for list="{{ leverTabs }}" as="t" hint-placeholder-count="4">
+            <button onClick="{{ t.onClick }}" style="border:0;border-bottom:3px solid {{ t.bar }};padding:18px 20px;text-align:left;font:inherit;cursor:pointer;background:{{ t.bg }};display:flex;flex-direction:column;gap:4px">
+              <span style="font-family:var(--font-heading);font-size:12px;color:var(--color-neutral-700)">{{ t.num }} · {{ t.count }} levers</span>
+              <span style="font-size:17px;font-weight:600;color:var(--color-accent-900)">{{ t.label }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="padding:8px 24px 16px;display:flex;flex-direction:column">
+          <sc-for list="{{ leverItems }}" as="l" hint-placeholder-count="4">
+            <div style="display:grid;grid-template-columns:minmax(160px,240px) minmax(0,1fr) auto;gap:8px 24px;padding:16px 0;border-bottom:1px solid var(--color-neutral-200);align-items:baseline">
+              <span style="font-size:15px;font-weight:600">{{ l.title }}</span>
+              <span style="font-size:14px;line-height:1.6;color:var(--color-neutral-700);text-wrap:pretty">{{ l.body }}</span>
+              <span style="font-family:var(--font-heading);font-size:12px;font-weight:600;color:var(--color-accent-700);white-space:nowrap">{{ l.stat }}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ isStorage }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:24px 0 8px;display:flex;flex-direction:column;gap:16px">
+              <div style="display:grid;grid-template-columns:minmax(160px,240px) minmax(0,1fr);gap:8px 24px;align-items:baseline">
+                <span style="font-size:15px;font-weight:600">ADLS lifecycle policies</span>
+                <span style="font-size:14px;line-height:1.6;color:var(--color-neutral-700);text-wrap:pretty">Move bronze and raw data to Cool or Archive tiers on a defined schedule, and delete stale checkpoints and temporary job output automatically.</span>
+              </div>
+              <div style="overflow-x:auto">
+                <div style="min-width:680px;display:grid;grid-template-columns:130px repeat(4,minmax(0,1fr));gap:6px">
+                  <span></span>
+                  <div style="background:var(--color-neutral-700);color:var(--color-bg);padding:12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:600">Hot</span><span style="font-size:12px">active data</span></div>
+                  <div style="background:var(--color-accent);color:var(--color-bg);padding:12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:600">Cool</span><span style="font-size:12px">infrequent access</span></div>
+                  <div style="background:var(--color-accent-900);color:var(--color-bg);padding:12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:600">Archive</span><span style="font-size:12px">retained, rarely read</span></div>
+                  <div style="background:var(--color-bg);border:1px dashed var(--color-neutral-700);color:var(--color-accent-900);padding:11px;display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:600">Delete</span><span style="font-size:12px;color:var(--color-neutral-700)">removed automatically</span></div>
+
+                  <span style="font-size:14px;font-weight:600;align-self:center">Bronze / raw</span>
+                  <div style="grid-column:2 / span 3;display:flex;align-items:center;gap:0;height:40px">
+                    <div style="flex:1;height:10px;background:var(--color-neutral-700)"></div><span style="padding:0 6px;color:var(--color-neutral-700)">▶</span>
+                    <div style="flex:1;height:10px;background:var(--color-accent)"></div><span style="padding:0 6px;color:var(--color-neutral-700)">▶</span>
+                    <div style="flex:1;height:10px;background:var(--color-accent-900)"></div>
+                  </div>
+                  <span></span>
+
+                  <span style="font-size:14px;font-weight:600;align-self:center">Silver / gold Delta</span>
+                  <div style="display:flex;align-items:center;height:40px"><div style="flex:1;height:10px;background:var(--color-neutral-700)"></div></div>
+                  <div style="grid-column:3 / span 3;display:flex;align-items:center;height:40px;font-size:13px;color:var(--color-neutral-700)">stays hot; VACUUM removes stale files on the retention schedule</div>
+
+                  <span style="font-size:14px;font-weight:600;align-self:center">Checkpoints &amp; temp output</span>
+                  <div style="grid-column:2 / span 3;display:flex;align-items:center;height:40px">
+                    <div style="width:28%;height:10px;background:var(--color-neutral-700)"></div>
+                    <div style="flex:1;border-top:2px dashed var(--color-divider);margin:0 6px"></div>
+                    <span style="color:var(--color-neutral-700)">▶</span>
+                  </div>
+                  <div style="display:flex;align-items:center;height:40px;font-size:13px;color:var(--color-neutral-700)">stale files</div>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--color-neutral-700);border-top:1px solid var(--color-neutral-200);padding-top:12px">
+                <span>← higher storage cost, cheaper access</span>
+                <span>lower storage cost, slower and costlier access →</span>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </section>
+
+    <section id="s6" style="padding:72px 0 0;display:flex;flex-direction:column;gap:24px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:var(--font-heading);font-size:13px;color:var(--color-neutral-700);font-weight:600">06 · COMPUTE SELECTION</span>
+        <h2 style="margin:0;font-family:var(--font-heading);font-size:32px;font-weight:600;letter-spacing:-.01em">Match compute type to workload</h2>
+        <p style="margin:0;max-width:720px;font-size:16px;line-height:1.6;color:var(--color-neutral-700)">Pick a workload to see the recommended compute and the settings that go with it.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ workloads }}" as="w" hint-placeholder-count="4">
+            <button onClick="{{ w.onClick }}" style="border:1px solid {{ w.border }};background:{{ w.bg }};color:{{ w.fg }};padding:16px 18px;text-align:left;font:inherit;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px">
+              <span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:600">{{ w.name }}</span><span style="font-size:13px;opacity:.8">{{ w.example }}</span></span>
+              <span style="font-size:18px">→</span>
+            </button>
+          </sc-for>
+        </div>
+        <div class="blueprint" style="background:var(--color-bg);border:1px solid var(--color-divider);padding:28px;display:flex;flex-direction:column;gap:18px"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <span style="font-family:var(--font-heading);font-size:12px;color:var(--color-neutral-700)">RECOMMENDED COMPUTE</span>
+          <span style="font-size:28px;font-weight:600;color:var(--color-neutral-700);line-height:1.15">{{ wl.compute }}</span>
+          <span style="font-size:15px;line-height:1.6;text-wrap:pretty">{{ wl.why }}</span>
+          <div style="display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--color-divider);padding-top:16px">
+            <sc-for list="{{ wl.tips }}" as="tip" hint-placeholder-count="3">
+              <div style="display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 12px;align-items:baseline">
+                <span style="font-family:var(--font-heading);font-size:12px;font-weight:600;background:var(--color-accent-100);color:var(--color-accent-700);padding:2px 8px;white-space:nowrap">{{ tip.k }}</span>
+                <span style="font-size:14px;line-height:1.55;color:var(--color-neutral-700)">{{ tip.v }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s7" style="padding:72px 0 0;display:flex;flex-direction:column;gap:24px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:var(--font-heading);font-size:13px;color:var(--color-accent-700);font-weight:600">07 · IMPLEMENTATION ROADMAP</span>
+        <h2 style="margin:0;font-family:var(--font-heading);font-size:32px;font-weight:600;letter-spacing:-.01em">Governance and quick wins before commitments</h2>
+      </div>
+      <div style="background:var(--color-bg);border:1px solid var(--color-divider);padding:28px;display:flex;flex-direction:column;gap:20px;overflow-x:auto">
+        <div style="min-width:640px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex">
+            <div style="width:33.33%;border:1px solid var(--color-accent-700);border-bottom:0;height:10px"></div>
+          </div>
+          <div style="font-size:13px;font-weight:600;color:var(--color-accent-700);margin-top:-4px">20–35% savings by week 8 · no code changes, no commitment</div>
+          <div style="display:flex;gap:4px">
+            <sc-for list="{{ phases }}" as="p" hint-placeholder-count="4">
+              <button onClick="{{ p.onClick }}" style="width:{{ p.w }}%;border:0;padding:16px 14px;text-align:left;font:inherit;cursor:pointer;background:{{ p.bg }};color:{{ p.fg }};display:flex;flex-direction:column;gap:4px">
+                <span style="font-family:var(--font-heading);font-size:12px;opacity:.85">{{ p.time }}</span>
+                <span style="font-size:15px;font-weight:600">{{ p.num }}. {{ p.name }}</span>
+                <span style="font-size:13px;opacity:.85">{{ p.focus }}</span>
+              </button>
+            </sc-for>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-family:var(--font-heading);font-size:11px;color:var(--color-neutral-700)"><span>Week 0</span><span>Week 4</span><span>Week 8</span><span>Month 4</span><span>Ongoing</span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px;border-top:1px solid var(--color-divider);padding-top:20px">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-family:var(--font-heading);font-size:12px;color:var(--color-neutral-700)">PHASE {{ ph.num }} · {{ ph.time }}</span>
+            <span style="font-size:24px;font-weight:600">{{ ph.name }}</span>
+            <span style="font-size:15px;color:var(--color-accent-700);font-weight:500">{{ ph.focus }}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <sc-for list="{{ ph.acts }}" as="a" hint-placeholder-count="4">
+              <div style="display:flex;gap:10px;font-size:14px;line-height:1.5"><span style="color:var(--color-accent-700)">■</span><span>{{ a }}</span></div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s8" style="padding:72px 0 0;display:flex;flex-direction:column;gap:24px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:var(--font-heading);font-size:13px;color:var(--color-accent-700);font-weight:600">08 · EXPECTED OUTCOMES</span>
+        <h2 style="margin:0;font-family:var(--font-heading);font-size:32px;font-weight:600;letter-spacing:-.01em">Typical savings by lever</h2>
+        <p style="margin:0;max-width:720px;font-size:16px;line-height:1.6;color:var(--color-neutral-700);text-wrap:pretty">Ranges for an unoptimised estate. Note the base each percentage applies to: some are on total spend, others only on the affected DBUs, VMs or storage.</p>
+      </div>
+      <div style="background:var(--color-bg);border:1px solid var(--color-divider);padding:24px 28px;display:flex;flex-direction:column;gap:4px;overflow-x:auto">
+        <div style="min-width:640px;display:grid;grid-template-columns:260px minmax(0,1fr) 110px;gap:16px;padding-bottom:10px;border-bottom:1px solid var(--color-divider);font-family:var(--font-heading);font-size:11px;color:var(--color-neutral-700)">
+          <span>LEVER</span>
+          <span style="display:flex;justify-content:space-between"><span>0%</span><span>20%</span><span>40%</span><span>60%</span><span>80%</span></span>
+          <span>EFFORT</span>
+        </div>
+        <sc-for list="{{ outcomes }}" as="o" hint-placeholder-count="7">
+          <div style="min-width:640px;display:grid;grid-template-columns:260px minmax(0,1fr) 110px;gap:16px;padding:12px 0;border-bottom:1px solid var(--color-neutral-200);align-items:center">
+            <span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:600">{{ o.lever }}</span><span style="font-size:12px;color:var(--color-neutral-700)">{{ o.base }}</span></span>
+            <div style="position:relative;height:28px;background:repeating-linear-gradient(90deg,var(--color-neutral-200) 0,var(--color-neutral-200) 1px,transparent 1px,transparent 25%)">
+              <div style="position:absolute;top:4px;bottom:4px;left:{{ o.left }}%;width:{{ o.width }}%;background:{{ o.color }};display:flex;align-items:center;padding:0 8px;box-sizing:border-box;min-width:72px"><span style="font-family:var(--font-heading);font-size:12px;font-weight:600;color:var(--color-bg);white-space:nowrap">{{ o.label }}</span></div>
+            </div>
+            <span style="font-size:13px;color:var(--color-accent-900)">{{ o.effort }}</span>
+          </div>
+        </sc-for>
+        <span style="font-size:12px;color:var(--color-neutral-700);padding-top:12px;min-width:640px">Illustrative benchmarks, not guarantees. The roadmap's discovery phase sizes each opportunity against the actual workload mix.</span>
+      </div>
+    </section>
+
+    <section id="s9" style="padding:72px 0 0">
+      <div style="background:var(--color-accent-900);color:var(--color-bg);padding:40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:32px;align-items:center">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <span style="font-family:var(--font-heading);font-size:13px;color:var(--color-accent-300);font-weight:600">09 · KEY PRINCIPLE</span>
+          <span style="font-size:36px;font-weight:600;line-height:1.1;letter-spacing:-.01em">Optimise before you commit.</span>
+          <span style="font-size:15px;line-height:1.6;color:var(--color-accent-200);text-wrap:pretty">Reserved capacity and DBCU pre-purchases lock in whatever baseline exists at purchase time, waste included.</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;color:var(--color-accent-300)">Commit first: discount applied to the wasteful baseline</span><div style="display:flex;height:30px"><div style="width:70%;background:var(--color-accent)"></div><div style="width:30%;background:repeating-linear-gradient(45deg,var(--color-neutral-700) 0,var(--color-neutral-700) 6px,var(--color-neutral-800) 6px,var(--color-neutral-800) 12px)"></div></div><span style="font-size:12px;color:var(--color-neutral-300)">waste locked in for 1–3 years</span></div>
+          <div style="display:flex;flex-direction:column;gap:4px;margin-top:8px"><span style="font-size:12px;color:var(--color-accent-300)">Optimise first: discount applied to the stable baseline</span><div style="display:flex;height:30px"><div style="width:70%;background:var(--color-accent)"></div></div><span style="font-size:12px;color:var(--color-accent-300)">commit only what is really needed</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s10" style="padding:72px 0 0;display:flex;flex-direction:column;gap:24px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:var(--font-heading);font-size:13px;color:var(--color-accent-700);font-weight:600">10 · SAVINGS CALCULATOR</span>
+        <h2 style="margin:0;font-family:var(--font-heading);font-size:32px;font-weight:600;letter-spacing:-.01em">Estimate savings by phase</h2>
+        <p style="margin:0;max-width:720px;font-size:16px;line-height:1.6;color:var(--color-neutral-700);text-wrap:pretty">An illustrative model built from the guide's ranges. Phase savings compound: each phase applies to the spend left after the previous one.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+        <div class="blueprint" style="background:var(--color-bg);border:1px solid var(--color-divider);padding:24px;display:flex;flex-direction:column;gap:24px"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <label style="display:flex;flex-direction:column;gap:10px">
+            <span style="display:flex;justify-content:space-between;font-size:14px;color:var(--color-neutral-700)"><span>Current monthly spend (DBU + Azure)</span></span>
+            <span style="font-size:30px;font-weight:600">{{ spendLabel }}</span>
+            <input type="range" min="10000" max="1000000" step="5000" value="{{ spend }}" onChange="{{ setSpend }}">
+          </label>
+          <label style="display:flex;flex-direction:column;gap:10px">
+            <span style="display:flex;justify-content:space-between;font-size:14px;color:var(--color-neutral-700)"><span>Share of optimised baseline committed (DBCU / RI)</span><span style="font-family:var(--font-heading);color:var(--color-accent-900)">{{ commit }}%</span></span>
+            <input type="range" min="0" max="90" step="5" value="{{ commit }}" onChange="{{ setCommit }}">
+          </label>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <span style="font-size:14px;color:var(--color-neutral-700)">Scenario</span>
+            <div style="display:flex;border:1px solid var(--color-divider)">
+              <sc-for list="{{ scenarios }}" as="s" hint-placeholder-count="3">
+                <button onClick="{{ s.onClick }}" style="flex:1;border:0;padding:10px 8px;font:inherit;font-size:14px;font-weight:500;cursor:pointer;background:{{ s.bg }};color:{{ s.fg }}">{{ s.label }}</button>
+              </sc-for>
+            </div>
+            <span style="font-size:12px;line-height:1.5;color:var(--color-neutral-700)">{{ scenarioNote }}</span>
+          </div>
+        </div>
+        <div class="blueprint" style="background:var(--color-bg);border:1px solid var(--color-divider);padding:24px;display:flex;flex-direction:column;gap:18px"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <sc-for list="{{ steps }}" as="s" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="display:flex;justify-content:space-between;gap:12px;font-size:14px"><span style="font-weight:600">{{ s.label }}</span><span style="font-family:var(--font-heading)">{{ s.value }}<span style="color:var(--color-accent-700);margin-left:8px">{{ s.delta }}</span></span></div>
+              <div style="height:22px;background:var(--color-neutral-200);display:flex"><div style="width:{{ s.pct }}%;background:{{ s.color }};transition:width .3s"></div><div style="width:{{ s.cut }}%;background:repeating-linear-gradient(45deg,var(--color-accent-200) 0,var(--color-accent-200) 5px,var(--color-accent-100) 5px,var(--color-accent-100) 10px);transition:width .3s"></div></div>
+            </div>
+          </sc-for>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--color-divider);border:1px solid var(--color-divider);margin-top:6px">
+            <div style="background:var(--color-accent-700);color:var(--color-bg);padding:16px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;opacity:.85">Annual saving</span><span style="font-size:26px;font-weight:600">{{ annualSave }}</span></div>
+            <div style="background:var(--color-bg);padding:16px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;color:var(--color-neutral-700)">Total reduction</span><span style="font-size:26px;font-weight:600">{{ totalPct }}</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="s11" style="padding:72px 0 0;display:flex;flex-direction:column;gap:24px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:var(--font-heading);font-size:13px;color:var(--color-accent-700);font-weight:600">11 · NEXT STEPS</span>
+        <h2 style="margin:0;font-family:var(--font-heading);font-size:32px;font-weight:600;letter-spacing:-.01em">Getting to the Phase 1 milestone</h2>
+      </div>
+      <div style="display:flex;flex-direction:column;border-top:1px solid var(--color-divider)">
+        <sc-for list="{{ nextSteps }}" as="n" hint-placeholder-count="4">
+          <button onClick="{{ n.onClick }}" style="border:0;border-bottom:1px solid var(--color-divider);background:transparent;padding:18px 4px;text-align:left;font:inherit;cursor:pointer;display:flex;gap:16px;align-items:flex-start;color:var(--color-accent-900)">
+            <span style="flex:none;width:22px;height:22px;border:2px solid var(--color-accent);background:{{ n.box }};color:{{ n.markFg }};display:flex;align-items:center;justify-content:center;font-size:14px;box-sizing:border-box">{{ n.mark }}</span>
+            <span style="font-size:16px;line-height:1.5;text-decoration:{{ n.strike }};color:{{ n.fg }}">{{ n.text }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <p style="margin:24px 0 0;font-size:13px;color:var(--color-neutral-700)">Prepared by Saurabh Dhingra, Uptut: Azure Databricks training and advisory.</p>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;currency&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;$&quot;,&quot;£&quot;,&quot;€&quot;,&quot;₹&quot;],&quot;default&quot;:&quot;$&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;defaultScenario&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;low&quot;,&quot;mid&quot;,&quot;high&quot;],&quot;default&quot;:&quot;mid&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const LEVERS = {
+  compute: { num: '4.1', label: 'Compute', items: [
+    { title: 'Match compute to workload', body: 'Run production pipelines on Jobs Compute, not All-Purpose clusters. Keep All-Purpose for interactive development; use SQL Warehouses or serverless for BI.', stat: '~½ DBU rate' },
+    { title: 'Autoscaling & auto-termination', body: 'Enable both on every cluster. Interactive clusters auto-terminate after 15–30 minutes idle. Use cluster pools for frequently starting jobs.', stat: '15–30 min' },
+    { title: 'Spot VMs', body: 'Spot instances for workers on fault-tolerant batch jobs; driver stays on-demand, with fallback to on-demand workers.', stat: '60–80% VM' },
+    { title: 'Right-sizing', body: 'Resize under-used clusters from utilisation metrics. Memory-optimised VMs for joins and shuffles, compute-optimised for ETL-heavy stages.', stat: '' },
+    { title: 'Photon', body: 'Higher DBU rate per hour, but SQL and Delta-heavy jobs often finish 2–3x faster, so net cheaper. Benchmark before enabling broadly.', stat: '2–3x faster' },
+    { title: 'Shared job clusters', body: 'In multi-task workflows, share one job cluster across tasks to avoid repeated startup cost.', stat: '' },
+    { title: 'SQL Warehouse sizing', body: 'Prefer serverless warehouses with 5–10 minute auto-stop, right-sized T-shirt sizes and capped max clusters.', stat: '5–10 min' }
+  ]},
+  storage: { num: '4.2', label: 'Data & Storage', items: [
+    { title: 'Delta table hygiene', body: 'Predictive optimisation or scheduled OPTIMIZE; liquid clustering instead of deep static partitioning; VACUUM on a sensible retention schedule.', stat: '' },
+    { title: 'Incremental processing', body: 'Auto Loader and incremental patterns (or Delta Live Tables) instead of full reloads; MERGE rather than overwrite for partial changes.', stat: '' }
+  ]},
+  network: { num: '4.3', label: 'Network', items: [
+    { title: 'Same-region placement', body: 'Keep workspace, storage account and downstream consumers in one Azure region to avoid cross-region transfer charges.', stat: '' },
+    { title: 'NAT Gateway & egress', body: 'On VNet-injected workspaces, monitor NAT Gateway and egress specifically. They are easy to overlook and grow quickly with high-throughput jobs.', stat: '' },
+    { title: 'Private Endpoints', body: 'Use deliberately rather than by default, weighing the security benefit against the added networking cost.', stat: '' }
+  ]},
+  commercial: { num: '4.4', label: 'Commercial', items: [
+    { title: 'Databricks Commit Units', body: 'Pre-purchase DBUs through Azure on a 1- or 3-year term at a discount, once usage is stable enough to size accurately.', stat: '1–3 yr' },
+    { title: 'Reserved VMs / Savings Plan', body: 'Cover the always-on baseline (steady-state jobs, always-on SQL Warehouses) with Reserved Instances or a compute Savings Plan.', stat: '' },
+    { title: 'MACC & Hybrid Benefit', body: 'Marketplace Databricks spend counts toward a Microsoft consumption commitment; Azure Hybrid Benefit can cut licensing on eligible VMs.', stat: '' }
+  ]}
+};
+const WORKLOADS = [
+  { id: 'etl', name: 'Scheduled production pipeline', example: 'Nightly ETL, batch jobs', compute: 'Jobs Compute', why: 'The DBU rate is roughly half that of All-Purpose clusters. Production pipelines should never run on interactive clusters.', tips: [
+    { k: 'Spot workers', v: 'For fault-tolerant batch jobs: 60–80% off worker VM cost. Driver stays on-demand.' },
+    { k: 'Shared cluster', v: 'One job cluster shared across tasks in a multi-task workflow.' },
+    { k: 'Photon', v: 'Benchmark SQL / Delta-heavy jobs; 2–3x faster often makes it net cheaper.' } ] },
+  { id: 'frequent', name: 'Frequently starting jobs', example: 'Short, repeated runs', compute: 'Jobs Compute + cluster pools', why: 'Pools keep idle instances ready, cutting cold-start time and cost for jobs that start often.', tips: [
+    { k: 'Autoscaling', v: 'Enable on every cluster so capacity follows the load.' },
+    { k: 'Right-size', v: 'Pick VM families to match the stage: memory- vs compute-optimised.' } ] },
+  { id: 'dev', name: 'Interactive development', example: 'Notebooks, exploration', compute: 'All-Purpose cluster (policy-bound)', why: 'Reserve All-Purpose clusters for interactive work, launched within compute policies that cap size and force tags.', tips: [
+    { k: 'Auto-terminate', v: 'After 15–30 minutes of inactivity.' },
+    { k: 'Policy caps', v: 'Max workers, allowed VM families, mandatory tags.' },
+    { k: 'Autoscaling', v: 'Scale down between bursts of work.' } ] },
+  { id: 'bi', name: 'BI dashboards & SQL', example: 'Power BI, ad-hoc queries', compute: 'Serverless SQL Warehouse', why: 'Built for BI concurrency. Serverless folds VM cost into one DBU rate, so savings come from sizing and auto-stop.', tips: [
+    { k: 'Auto-stop', v: 'Aggressive: 5–10 minutes.' },
+    { k: 'Sizing', v: 'Right-sized T-shirt size; cap max clusters per warehouse.' },
+    { k: 'Budget policy', v: 'Serverless budget policies to attribute and cap usage.' } ] }
+];
+const PHASES = [
+  { num: 1, name: 'Visibility', time: 'Weeks 0–4', focus: 'See the spend', w: 16.2, acts: ['Enable system tables', 'Roll out the tagging standard', 'Build the reconciled cost dashboard', 'Set budgets and anomaly alerts'] },
+  { num: 2, name: 'Quick wins', time: 'Weeks 4–8', focus: 'Stop the leaks', w: 16.2, acts: ['Apply compute policies', 'Enforce auto-termination', 'Move production jobs to Jobs Compute', 'Enable spot instances and warehouse auto-stop'] },
+  { num: 3, name: 'Engineering optimisation', time: 'Months 2–4', focus: 'Tune the workloads', w: 33, acts: ['Right-size clusters', 'Benchmark and roll out Photon', 'Adopt Delta optimisation and incremental pipelines', 'Apply storage lifecycle policies'] },
+  { num: 4, name: 'Commercial & continuous', time: 'Month 4 onward', focus: 'Lock in the gains', w: 33, acts: ['Purchase DBCU and VM reservations against the stabilised baseline', 'Establish chargeback', 'Run monthly FinOps reviews', 'Enforce policy-as-code'] }
+];
+const OUTCOMES = [
+  { lever: 'Visibility & chargeback', base: 'governance only, total spend', lo: 10, hi: 20, effort: 'Low', c: 'var(--color-accent)' },
+  { lever: 'Compute policies + auto-termination', base: 'total spend', lo: 10, hi: 15, effort: 'Low', c: 'var(--color-accent)' },
+  { lever: 'Jobs Compute vs All-Purpose', base: 'on affected DBUs', lo: 0, hi: 50, effort: 'Low–Medium', c: 'var(--color-neutral-700)', label: 'up to ~50%' },
+  { lever: 'Spot for batch workers', base: 'on affected VM cost', lo: 60, hi: 80, effort: 'Medium', c: 'var(--color-neutral-700)' },
+  { lever: 'Right-sizing & Photon', base: 'total spend', lo: 10, hi: 25, effort: 'Medium', c: 'var(--color-accent)' },
+  { lever: 'Delta optimisation & lifecycle', base: 'storage & I/O-bound jobs', lo: 5, hi: 15, effort: 'Medium', c: 'var(--color-neutral-700)' },
+  { lever: 'DBCU & Reserved Instances', base: 'additional, on committed baseline', lo: 15, hi: 30, effort: 'Low (post-stabilisation)', c: 'var(--color-accent-700)' }
+];
+const NEXT = ['Confirm access to the relevant Databricks workspaces and Azure subscriptions to begin the Phase 1 discovery and dashboard build.', 'Agree the tagging standard and cluster policy set with engineering leadership.', 'Schedule the first monthly FinOps review and confirm the accountable owner on the client side.', 'Review this document together and agree the target date for the Phase 1 visibility milestone.'];
+const RATES = { low: [0.20, 0.10, 0.15], mid: [0.275, 0.175, 0.225], high: [0.35, 0.25, 0.30] };
+
+class Component extends DCLogic {
+  state = { model: 'classic', infra: 50, lever: 'compute', wl: 'etl', phase: 0, spend: 100000, commit: 60, scen: null, done: [false, false, false, false] };
+  fmt(v) {
+    const s = this.props.currency ?? '$';
+    if (v >= 1e6) return s + (v / 1e6).toFixed(2) + 'M';
+    if (v >= 1e3) return s + Math.round(v / 1e3) + 'k';
+    return s + Math.round(v);
+  }
+  renderVals() {
+    const st = this.state;
+    const on = (a, b) => a === b;
+    const scen = st.scen ?? this.props.defaultScenario ?? 'mid';
+    const [r12, r3, d4] = RATES[scen];
+    const S = st.spend, S1 = S * (1 - r12), S2 = S1 * (1 - r3), S3 = S2 * (1 - (st.commit / 100) * d4);
+    const mk = (label, v, prev, color) => ({ label, value: this.fmt(v), delta: prev ? '−' + this.fmt(prev - v) : '', pct: (v / S) * 100, cut: prev ? ((prev - v) / S) * 100 : 0, color });
+    const wl = WORKLOADS.find(w => w.id === st.wl);
+    return {
+      modelTabs: [['classic', 'Classic compute'], ['serverless', 'Serverless']].map(([id, label]) => ({ label, bg: on(st.model, id) ? 'var(--color-accent-900)' : 'var(--color-bg)', fg: on(st.model, id) ? 'var(--color-bg)' : 'var(--color-accent-900)', onClick: () => this.setState({ model: id }) })),
+      isClassic: st.model === 'classic', isServerless: st.model === 'serverless',
+      infra: st.infra, dbuPct: 100 - st.infra, setInfra: e => this.setState({ infra: +e.target.value }),
+      pillars: [
+        { num: '3.1', title: 'Tagging standard', body: 'CostCenter, Project, Environment and Owner on every workload, enforced through cluster policies.' },
+        { num: '3.2', title: 'Visibility', body: 'System tables joined with Azure Cost Management exports; unit economics alongside raw spend.' },
+        { num: '3.3', title: 'Budgets, alerts & policies', body: 'Budgets and anomaly alerts, serverless budget policies, and compute policies that cap and force auto-termination.' },
+        { num: '3.4', title: 'Chargeback & ownership', body: 'Monthly cost report per business unit, a named FinOps owner, and a monthly review with engineering and finance.' }
+      ],
+      tags: [
+        { key: 'CostCenter', desc: 'The budget the workload draws against' },
+        { key: 'Project', desc: 'The initiative or product it supports' },
+        { key: 'Environment', desc: 'Production, Staging or Development' },
+        { key: 'Owner', desc: 'The accountable individual or team' }
+      ],
+      pipeline: [
+        { num: 1, title: 'Databricks system tables', color: 'var(--color-neutral-700)', font: "var(--font-heading)", items: ['system.billing.usage', 'system.billing.list_prices'] },
+        { num: 2, title: 'Azure Cost Management export', color: 'var(--color-accent)', font: 'inherit', items: ['Same subscriptions', 'Catches infrastructure cost the DBU view misses'] },
+        { num: 3, title: 'Reconciled dashboard', color: 'var(--color-accent-900)', font: 'inherit', items: ['By workspace, SKU, job, warehouse and tag', 'Reconciled monthly'] },
+        { num: 4, title: 'Unit economics', color: 'var(--color-accent-700)', font: 'inherit', items: ['Cost per pipeline run', 'Cost per TB processed', 'Cost per dashboard query'] }
+      ],
+      leverTabs: Object.entries(LEVERS).map(([id, g]) => ({ num: g.num, label: g.label, count: g.items.length + (id === 'storage' ? 1 : 0), bg: on(st.lever, id) ? 'var(--color-bg)' : 'var(--color-surface)', bar: on(st.lever, id) ? 'var(--color-neutral-700)' : 'transparent', onClick: () => this.setState({ lever: id }) })),
+      leverItems: LEVERS[st.lever].items, isStorage: st.lever === 'storage',
+      workloads: WORKLOADS.map(w => ({ ...w, bg: on(st.wl, w.id) ? 'var(--color-accent-900)' : 'var(--color-bg)', fg: on(st.wl, w.id) ? 'var(--color-bg)' : 'var(--color-accent-900)', border: on(st.wl, w.id) ? 'var(--color-accent-900)' : 'var(--color-divider)', onClick: () => this.setState({ wl: w.id }) })),
+      wl,
+      phases: PHASES.map((p, i) => ({ ...p, bg: i === st.phase ? 'var(--color-accent)' : (i < 2 ? 'var(--color-accent-100)' : 'var(--color-neutral-200)'), fg: i === st.phase ? 'var(--color-bg)' : 'var(--color-accent-900)', onClick: () => this.setState({ phase: i }) })),
+      ph: PHASES[st.phase],
+      outcomes: OUTCOMES.map(o => ({ ...o, color: o.c, left: (o.lo / 80) * 100, width: ((o.hi - o.lo) / 80) * 100, label: o.label ?? `${o.lo}–${o.hi}%` })),
+      spend: S, spendLabel: this.fmt(S), setSpend: e => this.setState({ spend: +e.target.value }),
+      commit: st.commit, setCommit: e => this.setState({ commit: +e.target.value }),
+      scenarios: [['low', 'Conservative'], ['mid', 'Midpoint'], ['high', 'Optimistic']].map(([id, label]) => ({ label, bg: on(scen, id) ? 'var(--color-accent-900)' : 'var(--color-bg)', fg: on(scen, id) ? 'var(--color-bg)' : 'var(--color-accent-900)', onClick: () => this.setState({ scen: id }) })),
+      scenarioNote: `Phases 1–2: ${Math.round(r12 * 1000) / 10}% · Phase 3: ${Math.round(r3 * 1000) / 10}% · Phase 4: ${Math.round(d4 * 1000) / 10}% discount on committed share`,
+      steps: [mk('Current', S, 0, 'var(--color-accent-900)'), mk('After Phases 1–2', S1, S, 'var(--color-accent)'), mk('After Phase 3', S2, S1, 'var(--color-accent)'), mk('After Phase 4', S3, S2, 'var(--color-accent-700)')],
+      annualSave: this.fmt((S - S3) * 12), totalPct: Math.round((1 - S3 / S) * 100) + '%',
+      nextSteps: NEXT.map((text, i) => ({ text, mark: st.done[i] ? '✓' : String(i + 1), box: st.done[i] ? 'var(--color-accent)' : 'var(--color-bg)', markFg: st.done[i] ? 'var(--color-bg)' : 'var(--color-accent)', fg: st.done[i] ? 'var(--color-neutral-700)' : 'var(--color-accent-900)', strike: st.done[i] ? 'line-through' : 'none', onClick: () => this.setState(s => { const d = [...s.done]; d[i] = !d[i]; return { done: d }; }) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

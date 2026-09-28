@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F2EC;color:#17191E;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#2F4FC9}a:hover{color:#17191E}
+*{box-sizing:border-box}
+</style>
+</helmet>
+<div style="max-width:1240px;margin:0 auto;padding:48px 28px 80px;display:flex;flex-direction:column;gap:56px">
+
+<header style="display:flex;flex-direction:column;gap:14px;max-width:840px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#5A5E66">Compliance primer · Azure + Databricks</div>
+<h1 style="margin:0;font-size:44px;line-height:1.08;font-weight:600;letter-spacing:-.02em;text-wrap:balance">Compliance in Azure Databricks: the compliance security profile and a platform security baseline</h1>
+<p style="margin:0;font-size:18px;line-height:1.55;color:#3E424A;text-wrap:pretty">A <strong>security baseline</strong> is the set of controls every workspace must have. The <strong>compliance security profile</strong> hardens the compute that runs your code in workspaces that process regulated data.</p>
+<div style="display:flex;flex-direction:column;gap:6px;border-left:2px solid #17191E;padding-left:14px;font-size:15px;line-height:1.5;color:#3E424A">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;color:#5A5E66">LEARNING OBJECTIVE</span>
+<span>Describe the compliance security profile and how to establish a platform security baseline.</span>
+</div>
+</header>
+
+
+<section style="display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5A5E66">01</span>
+<h2 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-.01em">Why: what goes wrong without a baseline</h2>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:16px;align-items:stretch">
+
+<article style="background:#fff;border:1.5px solid #17191E;border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;align-items:center;gap:10px">
+<span style="width:40px;height:40px;flex:none;display:inline-flex;align-items:center;justify-content:center;border:1.5px solid #17191E;border-radius:4px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#17191E" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.4-7.5 9.5-4.3-1.1-7.5-4.9-7.5-9.5V6z"></path><path d="M8.8 12.2l2.2 2.2 4.2-4.4"></path></svg></span>
+<h3 style="margin:0;font-size:20px;font-weight:600">Why a compliance baseline?</h3>
+</div>
+<p style="margin:0;font-size:15px;line-height:1.55;color:#3E424A;text-wrap:pretty">Every workspace starts with sensible defaults, but regulated data needs more, and it needs the same controls everywhere. Without a baseline, each team configures its own workspace and the weakest one sets your real security level.</p>
+<div style="display:flex;flex-direction:column">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#5A5E66;padding-bottom:8px;border-bottom:1px solid #E6E3DA"><span>RISK</span><span>PROTECTION</span></div>
+<sc-for list="{{ whyBase }}" as="r" hint-placeholder-count="4">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;font-size:14px;line-height:1.45;padding:10px 0;border-bottom:1px solid #E6E3DA"><span>{{ r.risk }}</span><span style="color:#3E424A"><strong style="color:#17191E">{{ r.fix }}</strong> {{ r.how }}</span></div>
+</sc-for>
+</div>
+</article>
+
+
+</div>
+
+<div style="background:#17191E;color:#F4F2EC;border-radius:6px;padding:20px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:16px">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.08em;color:#A9ADB6;margin-right:6px">THE CYCLE</span>
+<span style="border:1px solid #5A5E66;padding:6px 12px;border-radius:3px"><strong>Define</strong> the baseline</span><span style="color:#A9ADB6">→</span>
+<span style="border:1px solid #5A5E66;padding:6px 12px;border-radius:3px"><strong>Enforce</strong> it on every workspace</span><span style="color:#A9ADB6">→</span>
+<span style="border:1px solid #5A5E66;padding:6px 12px;border-radius:3px"><strong>Log</strong> every action</span><span style="color:#A9ADB6">→</span>
+<span style="border:1px solid #5A5E66;padding:6px 12px;border-radius:3px"><strong>Review</strong> and alert</span>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5A5E66">02</span>
+<h2 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-.01em">The compliance security profile</h2>
+</div>
+<p style="margin:0;font-size:16px;line-height:1.55;color:#3E424A;max-width:880px;text-wrap:pretty">The compliance security profile (CSP) is a workspace setting for processing regulated data such as health records (HIPAA) or card data (PCI-DSS). It changes the <strong>compute plane</strong>: cluster VMs run a hardened image with security monitoring agents and are patched on a fixed schedule. It requires the Premium plan and the Enhanced Security and Compliance add-on.</p>
+
+<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+<span style="font-size:14px;color:#5A5E66">Compare a workspace:</span>
+<sc-for list="{{ profOpts }}" as="o" hint-placeholder-count="2">
+<button onClick="{{ o.select }}" style="cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:14px;min-height:44px;padding:8px 14px;border-radius:4px;border:1.5px solid #17191E;background:{{ o.bg }};color:{{ o.fg }}">{{ o.label }}</button>
+</sc-for>
+</div>
+
+<div style="background:#fff;border:1.5px solid #17191E;border-radius:6px;padding:22px;display:flex;flex-direction:column">
+<div style="display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.6fr);gap:14px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#5A5E66;padding-bottom:10px;border-bottom:1px solid #E6E3DA"><span>CAPABILITY</span><span>{{ profHead }}</span></div>
+<sc-for list="{{ profRows }}" as="r" hint-placeholder-count="7">
+<div style="display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.6fr);gap:14px;font-size:14px;line-height:1.45;padding:12px 0;border-bottom:1px solid #E6E3DA;align-items:start">
+<span style="font-weight:600">{{ r.cap }}</span>
+<div style="display:flex;gap:8px;align-items:flex-start"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;flex:none;width:18px;color:{{ r.fg }}">{{ r.mark }}</span><span style="color:#3E424A">{{ r.val }}</span></div>
+</div>
+</sc-for>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;align-items:stretch">
+<div style="background:#fff;border:1px solid #D9D5CA;border-radius:6px;padding:20px;display:flex;flex-direction:column;gap:10px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;color:#C23E24">WHERE TO TURN IT ON</div>
+<div style="font-size:14px;line-height:1.5;border-left:2px solid #F0CFC7;padding-left:10px"><strong>Account console:</strong> enable for all new workspaces in the account, so no workspace is created without it.</div>
+<div style="font-size:14px;line-height:1.5;border-left:2px solid #F0CFC7;padding-left:10px"><strong>Workspace:</strong> enable on an existing workspace in its security settings, or at creation in ARM, Bicep or Terraform.</div>
+<div style="font-size:14px;line-height:1.5;border-left:2px solid #F0CFC7;padding-left:10px"><strong>Standards:</strong> choose the ones you process (e.g. HIPAA, PCI-DSS). This records intent; the controls applied are the same.</div>
+</div>
+<div style="background:#FBF1EE;border-radius:6px;padding:20px;display:flex;flex-direction:column;gap:10px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;color:#A3321C">BEFORE YOU ENABLE</div>
+<div style="font-size:14px;line-height:1.5">It <strong>cannot be turned off</strong> for that workspace.</div>
+<div style="font-size:14px;line-height:1.5">Running compute must be restarted to pick up the hardened image.</div>
+<div style="font-size:14px;line-height:1.5">Monthly maintenance restarts long-running clusters and streaming jobs. Design them to recover.</div>
+<div style="font-size:14px;line-height:1.5">Some preview features and older runtimes are unavailable. Check the supported list.</div>
+</div>
+<div style="background:#fff;border:1px solid #D9D5CA;border-radius:6px;padding:20px;display:flex;flex-direction:column;gap:10px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;color:#5A5E66">WHAT IT DOES NOT DO</div>
+<div style="font-size:14px;line-height:1.5;border-left:2px solid #D9D5CA;padding-left:10px">Make you compliant. You remain responsible for access control, network design, data handling and your own evidence.</div>
+<div style="font-size:14px;line-height:1.5;border-left:2px solid #D9D5CA;padding-left:10px">Replace the rest of the baseline. It hardens compute; identity, network and data controls are still yours to configure.</div>
+</div>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5A5E66">03</span>
+<h2 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-.01em">Establishing a platform security baseline</h2>
+</div>
+<p style="margin:0;font-size:16px;line-height:1.55;color:#3E424A;max-width:880px;text-wrap:pretty">A baseline is a written list of controls applied to every workspace, deployed as code so it can't drift. Controls are configured in four places: <strong style="color:#2F4FC9">Entra ID</strong>, <strong style="color:#0E6F78">Azure</strong>, the <strong style="color:#C23E24">Databricks account</strong> and each <strong style="color:#C23E24">workspace</strong>. Tick each control to assess a workspace.</p>
+
+<div style="background:#17191E;color:#F4F2EC;border-radius:6px;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+<div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:28px;font-weight:600">{{ doneCount }}</span><span style="font-size:15px;color:#C9CCD2">of {{ totalCount }} controls in place</span></div>
+<div style="flex:1 1 240px;max-width:420px;height:8px;background:#3E424A;border-radius:4px;overflow:hidden"><div style="height:100%;background:#F4F2EC;width:{{ donePct }}"></div></div>
+<button onClick="{{ resetChecks }}" style="cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:13px;min-height:36px;padding:6px 12px;border-radius:3px;border:1px solid #5A5E66;background:transparent;color:#F4F2EC">Reset</button>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;align-items:start">
+<sc-for list="{{ layers }}" as="l" hint-placeholder-count="6">
+<div style="background:#fff;border:1px solid #D9D5CA;border-radius:6px;padding:20px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><span style="font-size:18px;font-weight:600">{{ l.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5A5E66">{{ l.progress }}</span></div>
+<sc-for list="{{ l.items }}" as="c" hint-placeholder-count="4">
+<button onClick="{{ c.toggle }}" style="cursor:pointer;font-family:'IBM Plex Sans',sans-serif;text-align:left;background:{{ c.bg }};border:1px solid {{ c.border }};border-radius:4px;padding:10px 12px;min-height:44px;display:grid;grid-template-columns:20px minmax(0,1fr);gap:10px;align-items:start;color:#17191E">
+<span style="width:18px;height:18px;margin-top:1px;border:1.5px solid #17191E;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;line-height:1;background:{{ c.boxBg }};color:#fff">{{ c.tick }}</span>
+<span style="display:flex;flex-direction:column;gap:4px"><span style="font-size:14px;line-height:1.45">{{ c.text }}</span>
+<sc-if value="{{ showWhere }}" hint-placeholder-val="{{ true }}"><span style="align-self:flex-start;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;padding:2px 6px;border-radius:2px;background:{{ c.whereBg }};color:{{ c.whereFg }}">{{ c.where }}</span></sc-if></span>
+</button>
+</sc-for>
+</div>
+</sc-for>
+</div>
+
+<div style="background:#fff;border:1.5px solid #17191E;border-radius:6px;padding:20px 22px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px">
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#5A5E66">1 · DEFINE</span><span style="font-size:14px;line-height:1.5">Write the baseline as a short standard, with an owner and an exception process.</span></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#5A5E66">2 · DEPLOY AS CODE</span><span style="font-size:14px;line-height:1.5">Terraform or Bicep creates every workspace with the same settings. Azure Policy blocks non-compliant resources.</span></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#5A5E66">3 · CHECK FOR DRIFT</span><span style="font-size:14px;line-height:1.5">Run the Databricks Security Analysis Tool (SAT) on a schedule. It scores workspaces against best-practice checks.</span></div>
+</div>
+</section>
+
+<section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;border-top:1px solid #D9D5CA;padding-top:28px">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font-weight:600">Baseline first, profile where required</div><div style="font-size:14px;line-height:1.5;color:#3E424A">Every workspace gets the baseline. Add the compliance security profile to workspaces that process regulated data.</div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font-weight:600">Deploy as code, check for drift</div><div style="font-size:14px;line-height:1.5;color:#3E424A">A control that was configured by hand once will not stay configured. Terraform, Azure Policy and SAT keep it in place.</div></div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;defaultProfile&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;standard&quot;,&quot;csp&quot;],&quot;default&quot;:&quot;csp&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;showWhere&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = { checked: {} };
+  whyBase = [
+    { risk: 'Each team configures its own workspace; one leaves public access open', fix: 'One baseline.', how: 'The same controls on every workspace, deployed from code.' },
+    { risk: 'Settings are changed by hand and silently drift', fix: 'Drift checks.', how: 'Scheduled scans compare each workspace to the baseline.' },
+    { risk: 'Unpatched cluster images run for months', fix: 'Compliance security profile.', how: 'Hardened images and automatic monthly updates.' },
+    { risk: 'An auditor asks you to prove regulated data is protected', fix: 'Documented controls.', how: 'A baseline gives you a list to evidence, control by control.' }
+  ];
+  whyAudit = [
+    { risk: 'Data leaks and nobody can say who accessed it', fix: 'Access events.', how: 'Every table read, grant and download is recorded with identity and IP.' },
+    { risk: 'An admin grants themselves access and removes it afterwards', fix: 'Permission change events.', how: 'The grant and the revoke are both logged permanently.' },
+    { risk: 'Compromised credentials are used from an unknown location', fix: 'Sign-in events + alerts.', how: 'Failed and unusual sign-ins raise alerts in real time.' },
+    { risk: 'Regulation requires years of evidence', fix: 'Retention you control.', how: 'Logs delivered to your own storage or Log Analytics.' }
+  ];
+  prof = [
+    { cap: 'Compute image', std: 'Standard Databricks Runtime image', csp: 'CIS-hardened image with security agents installed', csp_on: true },
+    { cap: 'Malware and file integrity monitoring', std: 'Off, unless enhanced security monitoring is enabled on its own', csp: 'On: antivirus, behaviour-based malware detection and file integrity monitoring', csp_on: true },
+    { cap: 'Vulnerability scanning', std: 'Not performed on cluster hosts', csp: 'Hosts are scanned regularly for vulnerabilities', csp_on: true },
+    { cap: 'Patching', std: 'Clusters pick up fixes when you restart them', csp: 'Automatic cluster update restarts compute in a monthly maintenance window', csp_on: true },
+    { cap: 'Monitoring events', std: 'None', csp: 'Written to audit logs (e.g. service names capsule8-alerts-dataplane, clamAVScanService-dataplane)', csp_on: true },
+    { cap: 'Available features', std: 'All GA and preview features', csp: 'Only features and runtimes supported for the profile', csp_on: false },
+    { cap: 'Can be turned off', std: 'Not applicable', csp: 'No. Permanent for the workspace', csp_on: false },
+    { cap: 'Cost', std: 'Included in the plan', csp: 'Enhanced Security and Compliance add-on charge', csp_on: false }
+  ];
+  W = { entra: ['ENTRA ID', '#E9EDFB', '#1E3499'], azure: ['AZURE', '#F2F8F8', '#0E6F78'], acct: ['DATABRICKS ACCOUNT', '#FBF3F1', '#C23E24'], ws: ['WORKSPACE', '#FBF3F1', '#C23E24'], uc: ['UNITY CATALOG', '#FBF3F1', '#C23E24'] };
+  base = [
+    { name: 'Identity', items: [
+      ['id1', 'Single sign-on with Entra ID; Conditional Access requires MFA for Azure Databricks', 'entra'],
+      ['id2', 'Identities synced to the account; no local workspace users', 'acct'],
+      ['id3', 'Few admins; PIM for Azure roles on the workspace', 'entra'],
+      ['id4', 'Personal access tokens disabled or limited to a short lifetime', 'ws'] ] },
+    { name: 'Network', items: [
+      ['nw1', 'VNet injection with secure cluster connectivity (no public IPs)', 'azure'],
+      ['nw2', 'Private Link for front-end and back-end, or IP access lists', 'azure'],
+      ['nw3', 'Outbound traffic routed through a firewall', 'azure'],
+      ['nw4', 'Storage and Key Vault firewalls with private endpoints', 'azure'] ] },
+    { name: 'Data', items: [
+      ['dt1', 'Unity Catalog on every workspace; no business data in DBFS root', 'acct'],
+      ['dt2', 'Storage reached through the Access Connector managed identity; shared key access disabled', 'azure'],
+      ['dt3', 'Grants to groups; row filters and column masks on sensitive columns', 'uc'],
+      ['dt4', 'Customer-managed keys where regulation requires key control', 'azure'] ] },
+    { name: 'Compute', items: [
+      ['cp1', 'Cluster policies for all users; unrestricted cluster creation removed', 'ws'],
+      ['cp2', 'Only Unity Catalog access modes (standard or dedicated)', 'ws'],
+      ['cp3', 'Auto-termination on all-purpose compute', 'ws'],
+      ['cp4', 'Compliance security profile on workspaces with regulated data', 'acct'] ] },
+    { name: 'Workspace settings', items: [
+      ['ws1', 'Results download and notebook export off where not needed', 'ws'],
+      ['ws2', 'Verbose audit logs on', 'ws'],
+      ['ws3', 'Secrets in Key Vault-backed scopes only', 'ws'] ] },
+    { name: 'Monitoring', items: [
+      ['mn1', 'Diagnostic settings deliver logs to Log Analytics or Sentinel', 'azure'],
+      ['mn2', 'Security team has SELECT on system.access', 'uc'],
+      ['mn3', 'Alerts on admin changes, grants and failed sign-ins', 'azure'],
+      ['mn4', 'Security Analysis Tool runs on a schedule', 'ws'] ] }
+  ];
+  qs = [
+    { key: 'grant', name: 'Who changed permissions?', context: 'Every GRANT and REVOKE in Unity Catalog is logged as updatePermissions, with the object and the changes requested.',
+      sql: "SELECT event_time, user_identity.email,\n       request_params.securable_full_name,\n       request_params.changes\nFROM system.access.audit\nWHERE service_name = 'unityCatalog'\n  AND action_name = 'updatePermissions'\n  AND event_date >= current_date() - 30\nORDER BY event_time DESC;",
+      kql: 'DatabricksUnityCatalog\n| where TimeGenerated > ago(30d)\n| where ActionName == "updatePermissions"\n| project TimeGenerated, Identity,\n          RequestParams, Response\n| order by TimeGenerated desc',
+      best: 'Either. Use B to alert the security team in real time; use A to review changes across all workspaces at once.' },
+    { key: 'table', name: 'Who accessed a sensitive table?', context: 'Audit events show who requested a table and its credentials. For which queries actually read it, join with the lineage system table.',
+      sql: "SELECT event_time, user_identity.email,\n       action_name, source_ip_address\nFROM system.access.audit\nWHERE service_name = 'unityCatalog'\n  AND action_name IN ('getTable',\n      'generateTemporaryTableCredential')\n  AND request_params.full_name_arg =\n      'sales_prod.gold.customers'\n  AND event_date >= current_date() - 7;",
+      kql: 'DatabricksUnityCatalog\n| where TimeGenerated > ago(7d)\n| where ActionName in ("getTable",\n    "generateTemporaryTableCredential")\n| where RequestParams has\n    "sales_prod.gold.customers"\n| project TimeGenerated, Identity,\n          ActionName, SourceIPAddress',
+      best: 'A. It sits next to system.access.table_lineage, which records the tables each query read and wrote.' },
+    { key: 'login', name: 'Failed sign-ins', context: 'Sign-in attempts to a workspace are logged by the accounts service. A spike of failures from one IP suggests a guessed or stolen credential.',
+      sql: "SELECT event_time, user_identity.email,\n       source_ip_address, action_name,\n       response.status_code\nFROM system.access.audit\nWHERE service_name = 'accounts'\n  AND action_name LIKE '%Login'\n  AND response.status_code <> 200\n  AND event_date >= current_date() - 1;",
+      kql: 'DatabricksAccounts\n| where TimeGenerated > ago(1d)\n| where ActionName endswith "Login"\n| extend status = toint(\n    parse_json(Response).statusCode)\n| where status != 200\n| summarize failures = count()\n    by SourceIPAddress, bin(TimeGenerated, 15m)',
+      best: 'B, with an alert rule. Also check Entra ID sign-in logs, where Conditional Access blocks are recorded.' },
+    { key: 'secret', name: 'Who read a secret?', context: 'Each call to dbutils.secrets.get is logged as getSecret with the scope and key name. The value is never logged.',
+      sql: "SELECT event_time, user_identity.email,\n       request_params.scope,\n       request_params.key\nFROM system.access.audit\nWHERE service_name = 'secrets'\n  AND action_name = 'getSecret'\n  AND request_params.scope = 'kv-erp-prod';",
+      kql: 'DatabricksSecrets\n| where ActionName == "getSecret"\n| where RequestParams has "kv-erp-prod"\n| project TimeGenerated, Identity,\n          RequestParams',
+      best: 'Either. For Key Vault-backed scopes, Key Vault\'s own diagnostic logs record the read as well.' },
+    { key: 'csp', name: 'Compliance profile alerts', context: 'On workspaces with the compliance security profile, the monitoring agents on cluster hosts report detections as audit events.',
+      sql: "SELECT event_time, workspace_id,\n       service_name, action_name,\n       request_params\nFROM system.access.audit\nWHERE service_name IN (\n    'capsule8-alerts-dataplane',\n    'clamAVScanService-dataplane')\n  AND event_date >= current_date() - 7;",
+      kql: '// Enable the matching log categories\n// in the workspace diagnostic setting\nDatabricksCapsule8Dataplane\n| union DatabricksClamAVScan\n| where TimeGenerated > ago(7d)\n| project TimeGenerated, ActionName,\n          RequestParams',
+      best: 'B routed to Sentinel, so a malware detection reaches the security operations team as an incident.' }
+  ];
+  renderVals() {
+    const mode = this.state.prof ?? this.props.defaultProfile ?? 'csp';
+    const csp = mode === 'csp';
+    const sel = (on) => ({ bg: on ? '#17191E' : '#fff', fg: on ? '#F4F2EC' : '#17191E' });
+    const ch = this.state.checked;
+    let done = 0, total = 0;
+    const layers = this.base.map(l => {
+      let d = 0;
+      const items = l.items.map(([id, text, w]) => {
+        const on = !!ch[id]; if (on) d++;
+        const [where, whereBg, whereFg] = this.W[w];
+        return { text, where, whereBg, whereFg, tick: on ? '✓' : '', boxBg: on ? '#2A6B3A' : '#fff', bg: on ? '#F2F8F3' : '#fff', border: on ? '#9CC7A6' : '#E6E3DA',
+          toggle: () => this.setState(s => ({ checked: { ...s.checked, [id]: !s.checked[id] } })) };
+      });
+      done += d; total += items.length;
+      return { name: l.name, progress: `${d}/${items.length}`, items };
+    });
+    const qk = this.state.q ?? 'grant';
+    const q = this.qs.find(x => x.key === qk) || this.qs[0];
+    return {
+      whyBase: this.whyBase, whyAudit: this.whyAudit,
+      showWhere: this.props.showWhere ?? true,
+      profOpts: [['standard', 'Standard workspace'], ['csp', 'With compliance security profile']].map(([v, label]) => ({ label, ...sel(v === mode), select: () => this.setState({ prof: v }) })),
+      profHead: csp ? 'WITH COMPLIANCE SECURITY PROFILE' : 'STANDARD WORKSPACE',
+      profRows: this.prof.map(r => ({ cap: r.cap, val: csp ? r.csp : r.std,
+        mark: csp ? (r.csp_on ? '+' : '!') : '–', fg: csp ? (r.csp_on ? '#2A6B3A' : '#A3321C') : '#5A5E66' })),
+      layers, doneCount: done, totalCount: total, donePct: Math.round(done / total * 100) + '%',
+      resetChecks: () => this.setState({ checked: {} }),
+      compare: [
+        { k: 'Configured in', a: 'Databricks. Account admin grants access to the system.access schema.', b: 'Azure portal, ARM or Terraform: a diagnostic setting on each workspace resource.' },
+        { k: 'Scope', a: 'All workspaces in the account, plus account-level events (e.g. account console changes).', b: 'One workspace per setting. Account-level events are not included.' },
+        { k: 'Requires', a: 'Unity Catalog-enabled workspace', b: 'Premium plan' },
+        { k: 'Latency', a: 'Typically within an hour; not for real-time alerting', b: 'Minutes; suitable for alerting' },
+        { k: 'Retention', a: '365 days, managed by Databricks', b: 'You decide: Log Analytics retention and archive, or storage lifecycle rules' },
+        { k: 'Query with', a: 'SQL in notebooks, dashboards and SQL alerts', b: 'KQL in Log Analytics; any tool for storage or Event Hubs' },
+        { k: 'Who controls it', a: 'Data platform team, inside Databricks', b: 'Security team, outside Databricks. Admins in Databricks cannot tamper with it' },
+        { k: 'Cost', a: 'No extra charge to store; compute to query', b: 'Log Analytics ingestion and retention charges' },
+        { k: 'Best for', a: 'Investigation, usage analysis, joining with lineage and billing tables', b: 'SIEM integration, real-time alerts, long-term regulatory retention' }
+      ],
+      columns: [
+        { c: 'event_time / event_date', d: 'When it happened (UTC)' },
+        { c: 'workspace_id', d: 'Which workspace; 0 for account-level events' },
+        { c: 'user_identity.email', d: 'Who: user or service principal' },
+        { c: 'service_name · action_name', d: 'What: e.g. unityCatalog · updatePermissions' },
+        { c: 'request_params', d: 'Details: object names, scope, changes' },
+        { c: 'source_ip_address', d: 'From where' },
+        { c: 'response.status_code', d: 'Result: 200 success, 403 denied' }
+      ],
+      qTabs: this.qs.map((x, i) => ({ n: String(i + 1).padStart(2, '0'), name: x.name, ...sel(x.key === q.key), select: () => this.setState({ q: x.key }) })),
+      q
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F2EC;color:#17191E;font-family:'IBM Plex Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#2F4FC9}a:hover{color:#17191E}
+*{box-sizing:border-box}
+</style>
+</helmet>
+<div style="max-width:1240px;margin:0 auto;padding:48px 28px 80px;display:flex;flex-direction:column;gap:56px">
+
+<header style="display:flex;flex-direction:column;gap:14px;max-width:840px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#5A5E66">Data protection primer · Encryption</div>
+<h1 style="margin:0;font-size:44px;line-height:1.08;font-weight:600;letter-spacing:-.02em;text-wrap:balance">Encryption in Azure Databricks: at rest, in transit, and who holds the key</h1>
+<p style="margin:0;font-size:18px;line-height:1.55;color:#3E424A;text-wrap:pretty">Encryption keeps data unreadable to anyone who gets around access controls. In Azure Databricks it is on by default everywhere; <strong>customer-managed keys</strong> change who controls the key.</p>
+<div style="display:flex;flex-direction:column;gap:6px;border-left:2px solid #17191E;padding-left:14px;font-size:15px;line-height:1.5;color:#3E424A">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;color:#5A5E66">LEARNING OBJECTIVE</span>
+<span>Describe encryption at rest and in transit across the control plane, compute and storage, and the scope, rotation and operational obligations of customer-managed keys.</span>
+</div>
+</header>
+
+
+<section style="display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5A5E66">01</span>
+<h2 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-.01em">Why: what goes wrong without encryption</h2>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:16px;align-items:stretch">
+
+<article style="background:#fff;border:1.5px solid #17191E;border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;align-items:center;gap:10px">
+<span style="width:40px;height:40px;flex:none;display:inline-flex;align-items:center;justify-content:center;border:1.5px solid #17191E;border-radius:4px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#17191E" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="1.5"></rect><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"></path><path d="M12 14.5v2.5"></path></svg></span>
+<h3 style="margin:0;font-size:20px;font-weight:600">Why do we need encryption?</h3>
+</div>
+<p style="margin:0;font-size:15px;line-height:1.55;color:#3E424A;text-wrap:pretty">Permissions control who can open data. Encryption protects it when someone gets it another way, like a copied disk or an intercepted connection. Without the key, the data can't be read.</p>
+<div style="display:flex;flex-direction:column">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#5A5E66;padding-bottom:8px;border-bottom:1px solid #E6E3DA"><span>RISK</span><span>PROTECTION</span></div>
+<sc-for list="{{ whyEnc }}" as="r" hint-placeholder-count="4">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;font-size:14px;line-height:1.45;padding:10px 0;border-bottom:1px solid #E6E3DA"><span>{{ r.risk }}</span><span style="color:#3E424A"><strong style="color:#17191E">{{ r.fix }}</strong> {{ r.how }}</span></div>
+</sc-for>
+</div>
+</article>
+
+
+</div>
+
+<div style="background:#17191E;color:#F4F2EC;border-radius:6px;padding:20px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:16px">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.08em;color:#A9ADB6;margin-right:6px">THREE QUESTIONS FOR ANY DATA</span>
+<span style="border:1px solid #5A5E66;padding:6px 12px;border-radius:3px"><strong>Where</strong> does it rest?</span>
+<span style="border:1px solid #5A5E66;padding:6px 12px;border-radius:3px"><strong>Which path</strong> does it travel?</span>
+<span style="border:1px solid #5A5E66;padding:6px 12px;border-radius:3px"><strong>Who holds</strong> the key?</span>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5A5E66">02</span>
+<h2 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-.01em">Where data lives, and how it is encrypted</h2>
+</div>
+<p style="margin:0;font-size:16px;line-height:1.55;color:#3E424A;max-width:880px;text-wrap:pretty">An Azure Databricks deployment has three places data rests: the <strong style="color:#C23E24">control plane</strong> run by Databricks, the <strong>compute plane</strong> where clusters run, and <strong style="color:#0E6F78">storage</strong> in your subscription. Everything is encrypted at rest by default. The only question is whose key is used.</p>
+
+<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+<span style="font-size:14px;color:#5A5E66">Show keys as:</span>
+<sc-for list="{{ modeOpts }}" as="o" hint-placeholder-count="2">
+<button onClick="{{ o.select }}" style="cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:14px;min-height:44px;padding:8px 14px;border-radius:4px;border:1.5px solid #17191E;background:{{ o.bg }};color:{{ o.fg }}">{{ o.label }}</button>
+</sc-for>
+</div>
+
+<sc-if value="{{ cmkMode }}" hint-placeholder-val="{{ false }}">
+<div style="background:#E9EDFB;border:2px solid #2F4FC9;border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;flex-direction:column;gap:6px;max-width:880px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;color:#1E3499">WHAT IS A CUSTOMER-MANAGED KEY?</div>
+<div style="font-size:16px;line-height:1.55;color:#17191E;text-wrap:pretty">By default, Microsoft and Databricks create and hold the keys that encrypt your data. With a <strong>customer-managed key (CMK)</strong>, you create the key in <strong>your own Azure Key Vault</strong> and let the service use it. The data is still encrypted the same way (AES-256). What changes is who owns the key and who can take it away.</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
+<div style="background:#fff;border:1px solid #C3CDF0;border-radius:4px;padding:14px;display:flex;flex-direction:column;gap:6px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#1E3499">1 · CREATE</span><span style="font-size:14px;line-height:1.45">You create an RSA key in Key Vault, e.g. <span style="font-family:'IBM Plex Mono',monospace">kv-data-prod/cmk-dbw</span>.</span></div>
+<div style="background:#fff;border:1px solid #C3CDF0;border-radius:4px;padding:14px;display:flex;flex-direction:column;gap:6px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#1E3499">2 · GRANT</span><span style="font-size:14px;line-height:1.45">You give the service's identity permission to wrap and unwrap with the key. It can never export it.</span></div>
+<div style="background:#fff;border:1px solid #C3CDF0;border-radius:4px;padding:14px;display:flex;flex-direction:column;gap:6px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#1E3499">3 · USE</span><span style="font-size:14px;line-height:1.45">The service encrypts data with its own data key, then locks that data key with your key.</span></div>
+<div style="background:#fff;border:1px solid #C3CDF0;border-radius:4px;padding:14px;display:flex;flex-direction:column;gap:6px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#1E3499">4 · CONTROL</span><span style="font-size:14px;line-height:1.45">You rotate the key on your schedule. Disable it and the data can no longer be read.</span></div>
+</div>
+<div style="font-size:14px;line-height:1.5;color:#3E424A">The key labels in the three zones below now show where a CMK can be applied. Section 03 covers each scope in detail.</div>
+</div>
+</sc-if>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;align-items:stretch">
+<sc-for list="{{ zones }}" as="z" hint-placeholder-count="3">
+<div style="background:#fff;border:1.5px solid {{ z.color }};border-radius:6px;padding:20px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;flex-direction:column;gap:4px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:{{ z.color }}">{{ z.tag }}</div>
+<div style="font-size:20px;font-weight:600">{{ z.name }}</div>
+<div style="font-size:13px;color:#5A5E66">{{ z.runs }}</div>
+</div>
+<sc-for list="{{ z.stores }}" as="s" hint-placeholder-count="2">
+<div style="border:1px dashed {{ z.dash }};border-radius:4px;padding:12px;display:flex;flex-direction:column;gap:8px">
+<div style="font-size:15px;font-weight:600">{{ s.name }}</div>
+<div style="font-size:13px;line-height:1.45;color:#3E424A">{{ s.holds }}</div>
+<div style="display:flex;align-items:flex-start;gap:8px;border-radius:3px;padding:8px 10px;background:{{ s.keyBg }}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{ s.keyFg }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px"><circle cx="8" cy="15" r="4.5"></circle><path d="M11.2 11.8L20 3"></path><path d="M16.5 6.5l2.5 2.5"></path></svg>
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;font-weight:600;color:{{ s.keyFg }}">{{ s.key }}</span><span style="font-size:12px;color:#3E424A">{{ s.keyNote }}</span></div>
+</div>
+</div>
+</sc-for>
+</div>
+</sc-for>
+</div>
+
+<div style="background:#fff;border:1px solid #D9D5CA;border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;flex-direction:column;gap:4px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;color:#5A5E66">IN TRANSIT · EVERY HOP</div>
+<div style="font-size:14px;color:#3E424A">Data moving between zones travels over TLS. Private Link keeps the same traffic off the public internet, which is network isolation, not extra encryption.</div>
+</div>
+<sc-for list="{{ hops }}" as="h" hint-placeholder-count="4">
+<div style="display:grid;grid-template-columns:32px minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.2fr);gap:14px;align-items:start;padding:12px 0;border-top:1px solid #E6E3DA;font-size:14px;line-height:1.45">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;width:26px;height:26px;border:1.5px solid #17191E;border-radius:50%;display:inline-flex;align-items:center;justify-content:center">{{ h.n }}</span>
+<div style="display:flex;flex-direction:column;gap:2px"><span style="font-weight:600">{{ h.path }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5A5E66">{{ h.example }}</span></div>
+<div style="display:flex;flex-direction:column;gap:4px"><span style="align-self:flex-start;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:3px 8px;border-radius:3px;background:{{ h.bg }};color:{{ h.fg }}">{{ h.status }}</span></div>
+<span style="color:#3E424A">{{ h.note }}</span>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5A5E66">03</span>
+<h2 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-.01em">Customer-managed keys</h2>
+</div>
+<p style="margin:0;font-size:16px;line-height:1.55;color:#3E424A;max-width:880px;text-wrap:pretty">With a customer-managed key (CMK), the key that protects your data lives in <strong style="color:#2F4FC9">your Azure Key Vault</strong> or Managed HSM. You decide who can use it, when it rotates, and you can revoke it. That control comes with the duty to keep it available: lose the key and the data is gone.</p>
+
+<div style="background:#fff;border:1px solid #D9D5CA;border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:14px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;color:#5A5E66">HOW IT WORKS · ENVELOPE ENCRYPTION</div>
+<div style="display:flex;align-items:stretch;gap:10px;flex-wrap:wrap">
+<div style="flex:1 1 200px;border:2px solid #2F4FC9;background:#E9EDFB;border-radius:4px;padding:14px;display:flex;flex-direction:column;gap:4px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#1E3499">YOUR KEY VAULT</span><span style="font-size:15px;font-weight:600">Key-encryption key (KEK)</span><span style="font-size:13px;color:#3E424A">Your CMK. Never leaves the vault.</span></div>
+<span style="align-self:center;font-size:13px;color:#2F4FC9;font-family:'IBM Plex Mono',monospace">wraps →</span>
+<div style="flex:1 1 200px;border:1.5px solid #17191E;border-radius:4px;padding:14px;display:flex;flex-direction:column;gap:4px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#5A5E66">SERVICE</span><span style="font-size:15px;font-weight:600">Data-encryption key (DEK)</span><span style="font-size:13px;color:#3E424A">Stored only in wrapped form. Unwrapped in memory when needed.</span></div>
+<span style="align-self:center;font-size:13px;color:#17191E;font-family:'IBM Plex Mono',monospace">encrypts →</span>
+<div style="flex:1 1 200px;border:1px solid #D9D5CA;background:#F7F5F0;border-radius:4px;padding:14px;display:flex;flex-direction:column;gap:4px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#5A5E66">DATA</span><span style="font-size:15px;font-weight:600">Notebooks, disks, files</span><span style="font-size:13px;color:#3E424A">AES-256. Readable only after the DEK is unwrapped.</span></div>
+</div>
+<div style="font-size:14px;line-height:1.5;color:#3E424A">Because only the small DEK is wrapped by your key, rotating the CMK re-wraps the DEK. Terabytes of data don't have to be re-encrypted.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font-size:15px;color:#3E424A">Azure Databricks offers CMK for three scopes (Premium plan). Data in your own ADLS account is covered by Azure Storage's own CMK setting.</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<sc-for list="{{ cmkTabs }}" as="t" hint-placeholder-count="4">
+<button onClick="{{ t.select }}" style="cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:15px;padding:10px 16px;min-height:44px;border-radius:4px;border:1.5px solid #17191E;background:{{ t.bg }};color:{{ t.fg }};display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left"><span style="font-weight:600">{{ t.name }}</span><span style="font-size:12px;opacity:.8">{{ t.plane }}</span></button>
+</sc-for>
+</div>
+</div>
+
+<div style="background:#fff;border:1.5px solid #17191E;border-radius:6px;padding:24px;display:flex;flex-direction:column;gap:18px">
+<p style="margin:0;font-size:16px;line-height:1.55;color:#3E424A;max-width:860px;text-wrap:pretty">{{ cmk.summary }}</p>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+<div style="border:1px solid #D9D5CA;border-radius:4px;padding:16px;display:flex;flex-direction:column;gap:8px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#5A5E66">ENCRYPTS</div>
+<sc-for list="{{ cmk.covers }}" as="c" hint-placeholder-count="3"><div style="font-size:14px;line-height:1.45;border-left:2px solid #D9D5CA;padding-left:10px">{{ c }}</div></sc-for>
+</div>
+<div style="border:1.5px solid #2F4FC9;background:#E9EDFB;border-radius:4px;padding:16px;display:flex;flex-direction:column;gap:8px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#1E3499">WHO NEEDS KEY ACCESS</div>
+<div style="font-family:'IBM Plex Mono',monospace;font-size:13px;background:#fff;border:1px solid #C3CDF0;padding:6px 8px;border-radius:3px;word-break:break-word">{{ cmk.who }}</div>
+<div style="font-size:13px;line-height:1.45;color:#3E424A">{{ cmk.perms }}</div>
+</div>
+<div style="border:1px solid #D9D5CA;border-radius:4px;padding:16px;display:flex;flex-direction:column;gap:8px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#5A5E66">ROTATION</div>
+<div style="font-size:14px;line-height:1.5">{{ cmk.rotation }}</div>
+</div>
+<div style="background:#FBF1EE;border-radius:4px;padding:16px;display:flex;flex-direction:column;gap:8px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#A3321C">IF THE KEY IS DISABLED OR LOST</div>
+<div style="font-size:14px;line-height:1.5">{{ cmk.revoke }}</div>
+</div>
+</div>
+<div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5A5E66;border-top:1px solid #E6E3DA;padding-top:12px">Set on: {{ cmk.where }}</div>
+</div>
+
+<div style="background:#fff;border:1px solid #D9D5CA;border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:14px">
+<div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.06em;color:#5A5E66">OPERATIONAL OBLIGATIONS · WHAT YOU SIGN UP FOR</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">
+<sc-for list="{{ obligations }}" as="o" hint-placeholder-count="6">
+<div style="display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:start">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;width:26px;height:26px;border:1.5px solid #2F4FC9;color:#2F4FC9;border-radius:50%;display:inline-flex;align-items:center;justify-content:center">{{ o.n }}</span>
+<div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:15px;font-weight:600">{{ o.title }}</span><span style="font-size:14px;line-height:1.5;color:#3E424A;text-wrap:pretty">{{ o.body }}</span></div>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5A5E66">04</span>
+<h2 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-.01em">Check your understanding</h2>
+<span style="font-size:15px;color:#5A5E66">Five questions. Select an answer to see the explanation.</span>
+</div>
+<div style="background:#17191E;color:#F4F2EC;border-radius:6px;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+<div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:28px;font-weight:600">{{ quizScore }}</span><span style="font-size:15px;color:#C9CCD2">correct · {{ quizAnswered }} of 5 answered</span></div>
+<button onClick="{{ quizReset }}" style="cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:13px;min-height:36px;padding:6px 12px;border-radius:3px;border:1px solid #5A5E66;background:transparent;color:#F4F2EC">Reset</button>
+</div>
+<sc-for list="{{ quiz }}" as="q" hint-placeholder-count="5">
+<div style="background:#fff;border:1px solid #D9D5CA;border-radius:6px;padding:22px;display:flex;flex-direction:column;gap:14px">
+<div style="display:grid;grid-template-columns:32px minmax(0,1fr);gap:10px;align-items:start">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;width:28px;height:28px;border:1.5px solid #17191E;border-radius:50%;display:inline-flex;align-items:center;justify-content:center">{{ q.n }}</span>
+<div style="font-size:17px;font-weight:600;line-height:1.4;text-wrap:pretty">{{ q.q }}</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px">
+<sc-for list="{{ q.opts }}" as="o" hint-placeholder-count="4">
+<button onClick="{{ o.select }}" style="cursor:pointer;font-family:'IBM Plex Sans',sans-serif;text-align:left;min-height:44px;padding:10px 12px;border-radius:4px;border:1.5px solid {{ o.border }};background:{{ o.bg }};color:#17191E;display:grid;grid-template-columns:24px minmax(0,1fr) 16px;gap:8px;align-items:start;font-size:14px;line-height:1.45">
+<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#5A5E66">{{ o.letter }}</span><span>{{ o.text }}</span><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:{{ o.markFg }}">{{ o.mark }}</span>
+</button>
+</sc-for>
+</div>
+<sc-if value="{{ q.answered }}" hint-placeholder-val="{{ false }}">
+<div style="border-radius:4px;padding:12px 14px;background:{{ q.fbBg }};display:flex;flex-direction:column;gap:4px">
+<span style="font-size:14px;font-weight:600;color:{{ q.fbFg }}">{{ q.verdict }}</span>
+<span style="font-size:14px;line-height:1.5;color:#3E424A">{{ q.why }}</span>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</section>
+
+<section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;border-top:1px solid #D9D5CA;padding-top:28px">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font-weight:600">Encryption is on by default</div><div style="font-size:14px;line-height:1.5;color:#3E424A">At rest and in transit, every zone is encrypted without configuration. CMK changes who holds the key, not whether data is encrypted.</div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font-weight:600">CMK is an operational commitment</div><div style="font-size:14px;line-height:1.5;color:#3E424A">Choose it when a regulation or customer requires key control. Then protect, monitor and rotate the key like production infrastructure.</div></div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;defaultKeyMode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;default&quot;,&quot;cmk&quot;],&quot;default&quot;:&quot;default&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;defaultCmkScope&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ms&quot;,&quot;dbfs&quot;,&quot;disk&quot;,&quot;adls&quot;],&quot;default&quot;:&quot;ms&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = {};
+  whyEnc = [
+    { risk: 'A disk, snapshot or backup is copied or leaves the data centre', fix: 'At rest.', how: 'Stored bytes are AES-256 ciphertext; the copy is useless without the key.' },
+    { risk: 'Traffic between browser, cluster and storage is intercepted', fix: 'In transit.', how: 'TLS encrypts every hop, so captured packets reveal nothing.' },
+    { risk: 'A regulator or customer requires you to control who can decrypt', fix: 'Customer-managed key.', how: 'The key lives in your vault, under your policies and audit logs.' },
+    { risk: 'A contract ends or a breach needs containing now', fix: 'Revoke the key.', how: 'Disabling your key makes the data unreadable everywhere at once.' }
+  ];
+  whySec = [
+    { risk: 'Password pasted into a notebook, readable by every viewer and kept in revision history', fix: 'Secret scope.', how: 'Code holds only a name; the value is fetched at run time.' },
+    { risk: 'Code with a credential is committed to Git and copied to every clone', fix: 'Key Vault.', how: 'The secret never enters the repository.' },
+    { risk: 'Credential appears in job output, logs or cluster settings', fix: 'Redaction + ACLs.', how: 'Output shows [REDACTED]; only granted principals can read.' },
+    { risk: 'Rotating means editing every notebook, so nobody rotates', fix: 'One source of truth.', how: 'Rotate once in Key Vault; every job picks up the new value.' }
+  ];
+  cmkScopes = [
+    { key: 'ms', name: 'Managed services', plane: 'Control plane',
+      summary: 'Protects the data Databricks keeps for you in its control plane: your code, queries and stored credentials.',
+      covers: ['Notebook source and interactive notebook results stored in the control plane', 'Secrets in Databricks-backed secret scopes', 'Databricks SQL queries and query history', 'Personal access tokens and Git credentials for Git folders'],
+      who: 'AzureDatabricks (first-party enterprise app)', perms: 'Get, Wrap Key and Unwrap Key on the key. With Key Vault RBAC: Key Vault Crypto Service Encryption User.',
+      rotation: 'Create a new key version in Key Vault, then update the workspace to reference it. Keep earlier versions enabled until the update completes.',
+      revoke: 'Notebooks, queries and secrets become unreadable and workspace features that use them stop working. Restoring the key restores access.',
+      where: 'Workspace encryption setting (portal, ARM, Bicep or Terraform)' },
+    { key: 'dbfs', name: 'Workspace storage', plane: 'Storage · managed resource group',
+      summary: 'Protects the workspace storage account Databricks creates in the managed resource group: DBFS root and workspace system data.',
+      covers: ['DBFS root (legacy file storage)', 'Workspace system data such as job results and cluster logs', 'Default workspace catalog storage, where used'],
+      who: 'Managed identity of the workspace storage account', perms: 'Get, Wrap Key and Unwrap Key on the key. Created when CMK is enabled; grant it access before applying the key.',
+      rotation: 'Reference the key without a version to follow new versions automatically, or update to a specific version on your schedule.',
+      revoke: 'Clusters can no longer read or write workspace storage; jobs and DBFS paths fail. Data in your own ADLS accounts is unaffected.',
+      where: 'Workspace encryption setting' },
+    { key: 'disk', name: 'Managed disks', plane: 'Compute plane · classic',
+      summary: 'Protects the OS and data disks attached to classic cluster VMs, where Spark caches data and spills shuffle files.',
+      covers: ['Cluster VM managed disks in the managed resource group', 'Delta cache and Spark shuffle spill written to local disk'],
+      who: 'Disk encryption set created for the workspace', perms: 'Get, Wrap Key and Unwrap Key on the key.',
+      rotation: 'Supports automatic rotation: enable it and new clusters use the latest key version. Running clusters keep the version they started with.',
+      revoke: 'New clusters fail to start. Serverless compute is not covered by this setting.',
+      where: 'Workspace encryption setting' },
+    { key: 'adls', name: 'Your ADLS Gen2', plane: 'Storage · your subscription',
+      summary: 'Unity Catalog managed and external tables live in storage accounts you own. Their encryption is configured on the storage account, outside Databricks.',
+      covers: ['Delta tables and volumes in Unity Catalog storage', 'Any external location reached through a storage credential'],
+      who: 'User-assigned managed identity chosen on the storage account', perms: 'Key Vault Crypto Service Encryption User on the vault or key.',
+      rotation: 'Enable automatic key version updates on the storage account, or set a Key Vault rotation policy.',
+      revoke: 'All reads and writes to the account fail, from Databricks and every other service.',
+      where: 'Storage account → Encryption (Azure Storage, not Databricks)' }
+  ];
+  anti = [
+    { key: 'hard', name: 'Hardcoded password', why: 'Anyone who can open the notebook reads the password. It stays in revision history and every Git commit even after you delete the line.',
+      bad: 'jdbc_url = "jdbc:sqlserver://erp.database.windows.net"\npassword = "Summer2026!"\ndf = spark.read.jdbc(jdbc_url, "sales",\n    properties={"user": "etl", "password": password})',
+      good: 'password = dbutils.secrets.get(\n    scope="kv-data-prod", key="sql-erp-password")\ndf = spark.read.jdbc(jdbc_url, "sales",\n    properties={"user": "etl", "password": password})',
+      fix: 'Move the value to Key Vault, reference it through a scope, and rotate the exposed password immediately.' },
+    { key: 'acct', name: 'Storage account key in Spark config', why: 'An account key grants full control of every container in the account, bypasses Unity Catalog, and is visible to anyone who can view the cluster.',
+      bad: '# Cluster > Spark config\nfs.azure.account.key.stdatalake.dfs.core.windows.net\n  kJ8s2...Qw==',
+      good: '-- No key at all: Unity Catalog + managed identity\nCREATE EXTERNAL LOCATION raw_landing\n  URL \'abfss://raw@stdatalake.dfs.core.windows.net/\'\n  WITH (STORAGE CREDENTIAL sc_datalake);',
+      fix: 'Use a storage credential backed by the Access Connector managed identity. Disable shared key access on the storage account.' },
+    { key: 'print', name: 'Working around redaction', why: 'Redaction only matches the exact value. Printing it character by character or encoded bypasses it. Redaction is a safety net against accidents, not a security boundary.',
+      bad: 's = dbutils.secrets.get("kv-data-prod", "api-key")\nprint(" ".join(s))       # a p i - k e y ...\nprint(s.encode().hex())',
+      good: '# Grant READ only to the identity that needs it\ndatabricks secrets put-acl kv-data-prod \\\n  grp-prod-pipelines READ',
+      fix: 'Treat anyone with READ on a scope as able to see the secret. Grant READ narrowly, and give interactive users no access to production scopes.' },
+    { key: 'pat', name: 'Personal token in automation', why: 'A job or CI pipeline using a person\'s PAT acts with all of their rights, breaks when they leave, and makes the audit trail point at the wrong person.',
+      bad: '# CI pipeline variables\nDATABRICKS_HOST=https://adb-123.azuredatabricks.net\nDATABRICKS_TOKEN=dapi4f2e...   # priya\'s PAT',
+      good: '# CI authenticates as a service principal\n# via workload identity federation, no stored secret\nDATABRICKS_HOST=https://adb-123.azuredatabricks.net\nARM_CLIENT_ID=<sp-etl-prod app ID>\nDATABRICKS_AUTH_TYPE=github-oidc',
+      fix: 'Run automation as a service principal using OAuth with a federated credential. Restrict or disable PATs for users with workspace settings.' },
+    { key: 'one', name: 'One scope for everything', why: 'Dev and prod credentials in one scope with broad MANAGE means any user can read production passwords or grant themselves access.',
+      bad: 'scope: shared-secrets\n  prod-sql-password, dev-sql-password,\n  salesforce-token, sftp-key ...\nACL: users  MANAGE',
+      good: 'scope: kv-erp-prod    grp-prod-pipelines  READ\nscope: kv-erp-dev     grp-data-engineers  READ\nscope: kv-crm-prod    grp-prod-pipelines  READ\n# MANAGE: grp-platform-admins only',
+      fix: 'Create one scope per application and environment, backed by separate Key Vaults. Grant READ to groups, MANAGE to administrators only.' },
+    { key: 'param', name: 'Secrets as parameters', why: 'Widget values and job parameters are stored in plain text in run history and visible to anyone who can view the run.',
+      bad: '# Job task parameters\n{"sftp_password": "Xk29!pq"}\n\npw = dbutils.widgets.get("sftp_password")',
+      good: '# Pass the reference, not the value\n{"secret_scope": "kv-sftp-prod",\n "secret_key":   "partner-password"}\n\npw = dbutils.secrets.get(\n  dbutils.widgets.get("secret_scope"),\n  dbutils.widgets.get("secret_key"))',
+      fix: 'Pass scope and key names as parameters. The value is resolved inside the run and redacted.' }
+  ];
+  mcq = [
+    { q: 'Which network hop in Azure Databricks is NOT encrypted by default?', a: 3,
+      opts: ['Browser or API client to the control plane', 'Control plane to classic compute', 'Compute to ADLS Gen2 storage', 'Worker to worker (Spark shuffle)'],
+      why: 'Shuffle traffic between workers stays inside your VNet and is not encrypted by default. Every other hop uses TLS 1.2+. Enable inter-node encryption with an init script if policy requires it.' },
+    { q: 'What does switching to a customer-managed key change?', a: 1,
+      opts: ['It turns on encryption at rest, which is off by default', 'Who owns the key and who can revoke it', 'The algorithm, from AES-128 to AES-256', 'It encrypts data in transit as well as at rest'],
+      why: 'Data is already encrypted with AES-256 by default. A CMK moves the key into your Key Vault, so you control its use, rotation and revocation.' },
+    { q: 'Which CMK scope protects notebook source, SQL query history and Databricks-backed secrets?', a: 0,
+      opts: ['Managed services', 'Workspace storage', 'Managed disks', 'The ADLS Gen2 storage account'],
+      why: 'These objects live in the Databricks control plane, which is covered by the managed services key.' },
+    { q: 'With envelope encryption, what happens when you rotate the CMK?', a: 1,
+      opts: ['All stored data is decrypted and re-encrypted immediately', 'The data-encryption key is re-wrapped; the data itself is not re-encrypted', 'Data encrypted with the old version is deleted', 'Key Vault is no longer needed after rotation'],
+      why: 'Only the small data-encryption key is wrapped by your key, so rotation re-wraps that key. This is why rotation is quick even for terabytes of data.' },
+    { q: 'The CMK used for workspace storage is deleted and purged from Key Vault. What happens?', a: 2,
+      opts: ['Databricks falls back to a platform-managed key', 'Microsoft support can restore the key on request', 'The data encrypted with it becomes permanently unreadable', 'Only data written after the deletion is affected'],
+      why: 'Purging the key is crypto-shredding: nobody can recover the data. This is why soft delete and purge protection are required on the vault.' }
+  ];
+  quizVals() {
+    const ans = this.state.quiz ?? {};
+    let score = 0, answered = 0;
+    const quiz = this.mcq.map((m, qi) => {
+      const pick = ans[qi], done = pick !== undefined, right = pick === m.a;
+      if (done) { answered++; if (right) score++; }
+      return {
+        n: qi + 1, q: m.q, why: m.why, answered: done,
+        verdict: right ? 'Correct.' : 'Not quite. The answer is ' + 'ABCD'[m.a] + '.',
+        fbBg: right ? '#F2F8F3' : '#FBF1EE', fbFg: right ? '#2A6B3A' : '#A3321C',
+        opts: m.opts.map((t, oi) => {
+          const isAns = oi === m.a, isPick = oi === pick;
+          const st = !done ? { bg: '#fff', border: '#D9D5CA', mark: '', markFg: '#17191E' }
+            : isAns ? { bg: '#F2F8F3', border: '#9CC7A6', mark: '✓', markFg: '#2A6B3A' }
+            : isPick ? { bg: '#FBF1EE', border: '#E3A99C', mark: '✕', markFg: '#A3321C' }
+            : { bg: '#fff', border: '#E6E3DA', mark: '', markFg: '#17191E' };
+          return { letter: 'ABCD'[oi], text: t, ...st, select: () => this.setState(s => ({ quiz: { ...(s.quiz ?? {}), [qi]: oi } })) };
+        })
+      };
+    });
+    return { quiz, quizScore: score, quizAnswered: answered, quizReset: () => this.setState({ quiz: {} }) };
+  }
+  renderVals() {
+    const mode = this.state.mode ?? this.props.defaultKeyMode ?? 'default';
+    const cmkMode = mode === 'cmk';
+    const k = (def, defNote, cmk, cmkNote) => cmkMode
+      ? { key: cmk, keyNote: cmkNote, keyBg: '#E9EDFB', keyFg: '#1E3499' }
+      : { key: def, keyNote: defNote, keyBg: '#F7F5F0', keyFg: '#17191E' };
+    const cs = this.state.cmk ?? this.props.defaultCmkScope ?? 'ms';
+    const cmk = this.cmkScopes.find(x => x.key === cs) || this.cmkScopes[0];
+    const an = this.state.anti ?? 'hard';
+    const anti = this.anti.find(x => x.key === an) || this.anti[0];
+    const sel = (on) => ({ bg: on ? '#17191E' : '#fff', fg: on ? '#F4F2EC' : '#17191E' });
+    return {
+      whyEnc: this.whyEnc, whySec: this.whySec, cmkMode,
+      ...this.quizVals(),
+      modeOpts: [['default', 'Default (platform-managed)'], ['cmk', 'Customer-managed keys']].map(([v, label]) => ({ label, ...sel(v === mode), select: () => this.setState({ mode: v }) })),
+      zones: [
+        { tag: 'CONTROL PLANE · DATABRICKS SUBSCRIPTION', name: 'Control plane', runs: 'Web app, APIs, job scheduler, notebooks and queries. Operated by Databricks.', color: '#C23E24', dash: '#E3A99C',
+          stores: [{ name: 'Workspace metadata', holds: 'Notebook source, interactive results, SQL queries and history, Databricks-backed secrets, Git credentials.',
+            ...k('Databricks-managed key', 'Encrypted by default; Databricks holds the key.', 'CMK · managed services', 'Your Key Vault key wraps the encryption keys.') }] },
+        { tag: 'COMPUTE PLANE · CLUSTERS', name: 'Compute plane', runs: 'Classic compute runs in a VNet in your subscription. Serverless runs in Databricks\' subscription.', color: '#17191E', dash: '#A9ADB6',
+          stores: [
+            { name: 'Classic cluster disks', holds: 'VM OS and data disks: Delta cache and Spark shuffle spill.',
+              ...k('Platform-managed key', 'Azure disk encryption at rest, AES-256.', 'CMK · managed disks', 'Disk encryption set uses your key.') },
+            { name: 'Serverless compute', holds: 'Short-lived VMs in Databricks\' subscription, wiped after use.',
+              ...k('Databricks-managed key', 'Encrypted at rest and isolated per workload.', 'Databricks-managed key', 'Managed-disk CMK does not apply to serverless.') }] },
+        { tag: 'STORAGE · YOUR SUBSCRIPTION', name: 'Storage', runs: 'Where table data and files actually rest.', color: '#0E6F78', dash: '#9BC6CA',
+          stores: [
+            { name: 'Workspace storage account', holds: 'In the managed resource group: DBFS root, cluster logs, job results.',
+              ...k('Microsoft-managed key', 'Azure Storage encryption, AES-256.', 'CMK · workspace storage', 'Set through the workspace encryption setting.') },
+            { name: 'ADLS Gen2 (Unity Catalog)', holds: 'Managed and external tables and volumes: stdatalake.',
+              ...k('Microsoft-managed key', 'Azure Storage encryption, AES-256.', 'CMK on the storage account', 'Configured in Azure Storage, not Databricks.') }] }
+      ],
+      hops: [
+        { n: 1, path: 'User or API client → control plane', example: 'browser, CLI, BI tool', status: 'TLS 1.2+', note: 'HTTPS for the workspace UI and REST APIs. Add front-end Private Link to keep it on private networks.', bg: '#F2F8F3', fg: '#2A6B3A' },
+        { n: 2, path: 'Control plane ↔ classic compute', example: 'secure cluster connectivity', status: 'TLS 1.2+', note: 'Clusters open an outbound TLS tunnel to the control plane relay. No inbound ports and no public IPs on nodes.', bg: '#F2F8F3', fg: '#2A6B3A' },
+        { n: 3, path: 'Compute → storage and services', example: 'abfss://, Key Vault, JDBC', status: 'TLS 1.2+', note: 'abfss:// is HTTPS-only. Set the storage account to require secure transfer and minimum TLS 1.2; set encrypt=true on JDBC sources.', bg: '#F2F8F3', fg: '#2A6B3A' },
+        { n: 4, path: 'Worker ↔ worker', example: 'Spark shuffle inside the VNet', status: 'Not by default', note: 'Traffic stays inside your VNet. If policy requires it, enable inter-node encryption with an init script and accept a performance cost.', bg: '#FBF1EE', fg: '#A3321C' }
+      ],
+      cmkTabs: this.cmkScopes.map(x => ({ name: x.name, plane: x.plane, ...sel(x.key === cmk.key), select: () => this.setState({ cmk: x.key }) })),
+      cmk,
+      obligations: [
+        { n: 1, title: 'Protect the vault', body: 'Soft delete and purge protection are required. They are the only way back from an accidental key deletion.' },
+        { n: 2, title: 'Never delete a key in use', body: 'Deleting or purging the key is crypto-shredding: the data cannot be recovered by you, Microsoft or Databricks.' },
+        { n: 3, title: 'Rotate on a schedule', body: 'Set a Key Vault rotation policy and expiry alerts. Keep old versions enabled until every scope uses the new one.' },
+        { n: 4, title: 'Keep it reachable', body: 'If the vault firewall blocks the service or the vault is unavailable, the workspace fails. Allow trusted Microsoft services or private endpoints.' },
+        { n: 5, title: 'Separate duties', body: 'Key owners (security) should differ from workspace admins (platform). Use Key Vault RBAC and PIM for key operations.' },
+        { n: 6, title: 'Audit key use', body: 'Send Key Vault diagnostic logs to Log Analytics and alert on disable, delete and unexpected unwrap failures.' }
+      ],
+      secretSql: '# Python\npw = dbutils.secrets.get(scope="kv-data-prod", key="sql-erp-password")\nprint(pw)                     # [REDACTED]\n\n# Cluster Spark config or environment variable: reference, not value\nspark.erp.password {{secrets/kv-data-prod/sql-erp-password}}\n\n-- SQL\nSELECT secret(\'kv-data-prod\', \'sql-erp-password\');',
+      akvFacts: [
+        { k: 'Setup:', v: 'create in the workspace UI (#secrets/createScope) or CLI with the vault\'s DNS name and resource ID. Requires a user\'s Entra ID token.' },
+        { k: 'Vault access:', v: 'grant AzureDatabricks the Key Vault Secrets User role, or Get and List in an access policy.' },
+        { k: 'Read-only in Databricks:', v: 'add and rotate secrets in Key Vault; Databricks cannot write them.' },
+        { k: 'Audit:', v: 'every read appears in Key Vault logs as well as Databricks audit logs.' },
+        { k: 'Network:', v: 'if the vault firewall is on, allow trusted Microsoft services.' }
+      ],
+      dbxFacts: [
+        { k: 'Setup:', v: 'databricks secrets create-scope, then put-secret.' },
+        { k: 'Storage:', v: 'encrypted in the control plane; covered by the managed services CMK if enabled.' },
+        { k: 'Use for:', v: 'quick starts, or when no Key Vault is available to the team.' },
+        { k: 'Limitation:', v: 'secrets are managed per workspace, outside your central Azure rotation and audit tooling.' }
+      ],
+      acls: [
+        { p: 'READ', d: 'Read secrets in the scope. Give to the job\'s service principal group.' },
+        { p: 'WRITE', d: 'Read, add and change secrets (Databricks-backed scopes only).' },
+        { p: 'MANAGE', d: 'Everything above plus change the scope\'s ACLs. Platform admins only.' }
+      ],
+      scopeExamples: [
+        { scope: 'kv-erp-prod', who: 'grp-prod-pipelines', p: 'READ' },
+        { scope: 'kv-erp-dev', who: 'grp-data-engineers', p: 'READ' },
+        { scope: 'all scopes', who: 'grp-platform-admins', p: 'MANAGE' }
+      ],
+      ladder: [
+        { n: '1', title: 'No secret: managed identity', body: 'Unity Catalog reaches ADLS through the Access Connector\'s managed identity. Nothing to store or rotate.', bg: '#F2F8F3', fg: '#2A6B3A' },
+        { n: '2', title: 'No stored secret: federation / OAuth', body: 'CI/CD signs in as a service principal with a federated credential; Databricks issues short-lived OAuth tokens.', bg: '#F2F8F3', fg: '#2A6B3A' },
+        { n: '3', title: 'Secret in Key Vault via a scope', body: 'For third-party systems that only accept passwords or API keys: an ERP database, an SFTP partner.', bg: '#F7F5F0', fg: '#17191E' },
+        { n: '✕', title: 'Secret in code, config or parameters', body: 'Never. See the anti-patterns below.', bg: '#FBF1EE', fg: '#A3321C' }
+      ],
+      antiTabs: this.anti.map((x, i) => ({ n: String(i + 1).padStart(2, '0'), name: x.name, ...sel(x.key === anti.key), select: () => this.setState({ anti: x.key }) })),
+      anti
+    };
+  }
+}
+</script>
+</body>
+</html>

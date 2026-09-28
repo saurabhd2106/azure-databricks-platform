@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/industry-d78e342e-fb0e-4b38-b2ca-5e5c417c81e8/styles.css">
+<script src="_ds/industry-d78e342e-fb0e-4b38-b2ca-5e5c417c81e8/_ds_bundle.js"></script>
+<style>
+body{margin:0;-webkit-font-smoothing:antialiased}
+a{color:var(--color-accent-700)}a:hover{color:var(--color-accent-800)}
+</style>
+</helmet>
+<div style="min-height:100vh">
+  <header style="background:var(--color-accent-900);color:var(--color-bg);padding:48px 32px 40px">
+    <div style="max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:22px">
+      <div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-family:var(--font-heading);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-300)">
+        <a href="Cost Strategy.dc.html#s3" style="color:var(--color-accent-300);text-decoration:none">← Cost strategy · 03 Tagging</a>
+        <span>Use case deep-dive</span>
+      </div>
+      <h1 style="margin:0;font-family:var(--font-heading);font-size:clamp(32px,4.6vw,50px);line-height:1.05;font-weight:600;letter-spacing:-.02em;max-width:860px;text-wrap:balance">Tagging strategy, end to end: the Customer 360 programme</h1>
+      <p style="margin:0;max-width:720px;font-size:17px;line-height:1.55;color:var(--color-accent-200);text-wrap:pretty">How one team's spend is tagged, enforced, propagated, collected and charged back, followed from policy design through to the monthly invoice line.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1px;background:var(--color-accent-800);border:1px solid var(--color-accent-800)">
+        <div style="background:var(--color-accent-900);padding:16px 18px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;color:var(--color-accent-300)">ORGANISATION</span><span style="font-size:16px;font-weight:600">Contoso Retail</span></div>
+        <div style="background:var(--color-accent-900);padding:16px 18px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;color:var(--color-accent-300)">BUSINESS UNIT</span><span style="font-size:16px;font-weight:600">Marketing Analytics</span></div>
+        <div style="background:var(--color-accent-900);padding:16px 18px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;color:var(--color-accent-300)">PROJECT</span><span style="font-size:16px;font-weight:600">Customer 360</span></div>
+        <div style="background:var(--color-accent-900);padding:16px 18px;display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;color:var(--color-accent-300)">WORKSPACES</span><span style="font-size:16px;font-weight:600">dev · staging · prod</span></div>
+      </div>
+      <span style="font-size:12px;color:var(--color-accent-300)">Illustrative scenario. Names, values and figures are examples.</span>
+    </div>
+  </header>
+
+  <main style="max-width:1120px;margin:0 auto;padding:0 32px 96px;display:flex;flex-direction:column">
+
+    <section id="t1" style="padding:64px 0 0;display:flex;flex-direction:column;gap:22px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:var(--font-heading);font-size:13px;color:var(--color-accent-700);font-weight:600">T1 · THE WORKLOADS</span>
+        <h2 style="margin:0;font-family:var(--font-heading);font-size:30px;font-weight:600;letter-spacing:-.01em">Three workloads, three compute types, one cost owner</h2>
+        <p style="margin:0;max-width:720px;font-size:16px;line-height:1.6;color:var(--color-neutral-700);text-wrap:pretty">Each compute type takes tags in a different place. The strategy has to cover all three, or spend leaks out of the chargeback report.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">
+        <div class="blueprint" style="background:var(--color-bg);border:1px solid var(--color-divider);border-top:3px solid var(--color-neutral-700);padding:20px;display:flex;flex-direction:column;gap:8px"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i><span style="font-family:var(--font-heading);font-size:12px;color:var(--color-neutral-700)">JOBS COMPUTE</span><span style="font-size:17px;font-weight:600">Nightly customer ETL</span><span style="font-size:14px;line-height:1.55;color:var(--color-neutral-700)">Ingests POS, web and loyalty data into the Customer 360 Delta tables. Runs in prod on spot workers.</span></div>
+        <div class="blueprint" style="background:var(--color-bg);border:1px solid var(--color-divider);border-top:3px solid var(--color-neutral-700);padding:20px;display:flex;flex-direction:column;gap:8px"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i><span style="font-family:var(--font-heading);font-size:12px;color:var(--color-neutral-700)">ALL-PURPOSE</span><span style="font-size:17px;font-weight:600">Churn model notebooks</span><span style="font-size:14px;line-height:1.55;color:var(--color-neutral-700)">Data scientists explore features and train models in the dev workspace on policy-bound clusters.</span></div>
+        <div class="blueprint" style="background:var(--color-bg);border:1px solid var(--color-divider);border-top:3px solid var(--color-neutral-700);padding:20px;display:flex;flex-direction:column;gap:8px"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i><span style="font-family:var(--font-heading);font-size:12px;color:var(--color-neutral-700)">SERVERLESS SQL</span><span style="font-size:17px;font-weight:600">Power BI customer dashboards</span><span style="font-size:14px;line-height:1.55;color:var(--color-neutral-700)">Marketing managers query a serverless SQL Warehouse through Power BI during business hours.</span></div>
+      </div>
+    </section>
+
+    <section id="t2" style="padding:64px 0 0;display:flex;flex-direction:column;gap:22px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:var(--font-heading);font-size:13px;color:var(--color-accent-700);font-weight:600">T2 · TAG TAXONOMY</span>
+        <h2 style="margin:0;font-family:var(--font-heading);font-size:30px;font-weight:600;letter-spacing:-.01em">Four mandatory keys, controlled values</h2>
+        <p style="margin:0;max-width:720px;font-size:16px;line-height:1.6;color:var(--color-neutral-700);text-wrap:pretty">Keys are case-sensitive and must be spelled identically everywhere, or Azure and Databricks reports will split one team into several. Values come from a controlled list, not free text.</p>
+      </div>
+      <div style="background:var(--color-bg);border:1px solid var(--color-divider);overflow-x:auto">
+        <div style="min-width:760px;display:flex;flex-direction:column">
+          <div style="display:grid;grid-template-columns:150px 170px minmax(0,1fr) 150px 160px;gap:16px;padding:12px 20px;background:var(--color-accent-900);color:var(--color-bg);font-family:var(--font-heading);font-size:11px;letter-spacing:.04em">
+            <span>KEY</span><span>CUSTOMER 360 VALUE</span><span>ALLOWED VALUES</span><span>SET BY</span><span>POLICY RULE</span>
+          </div>
+          <sc-for list="{{ taxonomy }}" as="t" hint-placeholder-count="4">
+            <div style="display:grid;grid-template-columns:150px 170px minmax(0,1fr) 150px 160px;gap:16px;padding:14px 20px;border-bottom:1px solid var(--color-neutral-200);align-items:baseline">
+              <span style="font-family:var(--font-heading);font-size:14px;font-weight:600;color:var(--color-accent-700)">{{ t.key }}</span>
+              <span style="font-family:var(--font-heading);font-size:13px;background:var(--color-accent-100);padding:2px 8px;justify-self:start">{{ t.value }}</span>
+              <span style="font-size:14px;line-height:1.5;color:var(--color-neutral-700)">{{ t.allowed }}</span>
+              <span style="font-size:14px">{{ t.setBy }}</span>
+              <span style="font-family:var(--font-heading);font-size:12px;font-weight:600;color:var(--color-accent-700)">{{ t.rule }}</span>
+            </div>
+          </sc-for>
+          <div style="padding:14px 20px;display:flex;gap:10px;flex-wrap:wrap;align-items:baseline;background:var(--color-surface)">
+            <span style="font-size:13px;font-weight:600">Added automatically by Databricks on classic compute:</span>
+            <sc-for list="{{ defaultTags }}" as="d" hint-placeholder-count="5">
+              <span style="font-family:var(--font-heading);font-size:12px;border:1px solid var(--color-divider);background:var(--color-bg);padding:2px 8px">{{ d }}</span>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="t3" style="padding:64px 0 0;display:flex;flex-direction:column;gap:22px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:var(--font-heading);font-size:13px;color:var(--color-accent-700);font-weight:600">T3 · WHERE TAGS ARE APPLIED</span>
+        <h2 style="margin:0;font-family:var(--font-heading);font-size:30px;font-weight:600;letter-spacing:-.01em">Six enforcement points, from subscription to serverless</h2>
+        <p style="margin:0;max-width:720px;font-size:16px;line-height:1.6;color:var(--color-neutral-700)">Select a layer to see what it controls and how Customer 360 configures it.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <sc-for list="{{ layers }}" as="l" hint-placeholder-count="6">
+            <button onClick="{{ l.onClick }}" style="margin-left:{{ l.indent }}px;border:1px solid {{ l.border }};background:{{ l.bg }};color:{{ l.fg }};padding:12px 16px;text-align:left;font:inherit;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;box-shadow:inset 3px 0 0 {{ l.accent }}">
+              <span style="display:flex;flex-direction:column;gap:2px"><span style="font-family:var(--font-heading);font-size:11px;opacity:.8">{{ l.platform }}</span><span style="font-size:15px;font-weight:600">{{ l.name }}</span></span>
+              <span style="font-size:13px;opacity:.8">{{ l.tool }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div class="blueprint" style="background:var(--color-bg);border:1px solid var(--color-divider);padding:24px;display:flex;flex-direction:column;gap:16px"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="font-family:var(--font-heading);font-size:12px;color:var(--color-neutral-700)">{{ layer.platform }} · {{ layer.tool }}</span>
+            <span style="font-size:24px;font-weight:600">{{ layer.name }}</span>
+          </div>
+          <span style="font-size:15px;line-height:1.6;text-wrap:pretty">{{ layer.what }}</span>
+          <div style="display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--color-divider);padding-top:14px">
+            <span style="font-size:12px;font-weight:600;color:var(--color-neutral-700)">CUSTOMER 360 CONFIGURATION</span>
+            <sc-for list="{{ layer.config }}" as="c" hint-placeholder-count="2">
+              <div style="display:flex;gap:10px;font-size:14px;line-height:1.5"><span style="color:var(--color-accent-700)">■</span><span>{{ c }}</span></div>
+            </sc-for>
+          </div>
+          <sc-if value="{{ layer.hasCode }}" hint-placeholder-val="{{ false }}">
+            <pre style="margin:0;background:var(--color-accent-900);color:var(--color-accent-200);padding:16px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.6;overflow-x:auto;white-space:pre">{{ layer.code }}</pre>
+          </sc-if>
+        </div>
+      </div>
+    </section>
+
+    <section id="t4" style="padding:64px 0 0;display:flex;flex-direction:column;gap:22px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:var(--font-heading);font-size:13px;color:var(--color-accent-700);font-weight:600">T4 · THE PROCESS</span>
+        <h2 style="margin:0;font-family:var(--font-heading);font-size:30px;font-weight:600;letter-spacing:-.01em">Seven steps, three owners, one monthly loop</h2>
+      </div>
+      <div style="background:var(--color-bg);border:1px solid var(--color-divider);overflow-x:auto">
+        <div style="min-width:860px;display:grid;grid-template-columns:150px repeat(7,minmax(0,1fr))">
+          <span style="padding:12px 14px;border-bottom:1px solid var(--color-divider)"></span>
+          <sc-for list="{{ steps }}" as="s" hint-placeholder-count="7">
+            <button onClick="{{ s.onClick }}" style="border:0;border-bottom:3px solid {{ s.bar }};border-left:1px solid var(--color-neutral-200);background:{{ s.bg }};padding:12px 10px;text-align:left;font:inherit;cursor:pointer;display:flex;flex-direction:column;gap:2px">
+              <span style="font-family:var(--font-heading);font-size:11px;color:var(--color-neutral-700)">STEP {{ s.num }}</span>
+              <span style="font-size:14px;font-weight:600;color:var(--color-accent-900)">{{ s.name }}</span>
+            </button>
+          </sc-for>
+          <sc-for list="{{ lanes }}" as="lane" hint-placeholder-count="3">
+            <div style="display:contents">
+              <span style="padding:14px;font-size:13px;font-weight:600;border-top:1px solid var(--color-neutral-200);background:var(--color-surface);display:flex;flex-direction:column;gap:2px">{{ lane.name }}<span style="font-weight:400;color:var(--color-neutral-700);font-size:12px">{{ lane.who }}</span></span>
+              <sc-for list="{{ lane.cells }}" as="c" hint-placeholder-count="7">
+                <div style="border-top:1px solid var(--color-neutral-200);border-left:1px solid var(--color-neutral-200);padding:10px 8px;display:flex;align-items:center;background:{{ c.bgCell }}">
+                  <sc-if value="{{ c.on }}" hint-placeholder-val="{{ false }}">
+                    <span style="width:100%;background:{{ c.chip }};color:{{ c.chipFg }};font-size:12px;line-height:1.35;padding:8px;box-sizing:border-box">{{ c.text }}</span>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div class="blueprint" style="background:var(--color-bg);border:1px solid var(--color-divider);padding:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-family:var(--font-heading);font-size:12px;color:var(--color-neutral-700)">STEP {{ step.num }} · {{ step.when }}</span>
+          <span style="font-size:24px;font-weight:600">{{ step.name }}</span>
+          <span style="font-size:14px;color:var(--color-accent-700);font-weight:500">Owner: {{ step.owner }}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ step.acts }}" as="a" hint-placeholder-count="3">
+            <div style="display:flex;gap:10px;font-size:14px;line-height:1.5"><span style="color:var(--color-accent-700)">■</span><span>{{ a }}</span></div>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;background:var(--color-surface);padding:14px 16px">
+          <span style="font-size:12px;font-weight:600;color:var(--color-neutral-700)">OUTPUT</span>
+          <span style="font-size:14px;line-height:1.5">{{ step.output }}</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="t5" style="padding:64px 0 0;display:flex;flex-direction:column;gap:22px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:var(--font-heading);font-size:13px;color:var(--color-neutral-700);font-weight:600">T5 · FOLLOW THE TAGS</span>
+        <h2 style="margin:0;font-family:var(--font-heading);font-size:30px;font-weight:600;letter-spacing:-.01em">From one run to the billing records</h2>
+        <p style="margin:0;max-width:720px;font-size:16px;line-height:1.6;color:var(--color-neutral-700)">Pick a workload to trace where its tags land. Serverless has no Azure VM row: its compute is included in the DBU rate.</p>
+      </div>
+      <div style="display:flex;border:1px solid var(--color-divider);align-self:flex-start;flex-wrap:wrap">
+        <sc-for list="{{ traceTabs }}" as="t" hint-placeholder-count="3">
+          <button onClick="{{ t.onClick }}" style="border:0;padding:10px 18px;font:inherit;font-size:14px;font-weight:500;cursor:pointer;background:{{ t.bg }};color:{{ t.fg }}">{{ t.label }}</button>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;align-items:stretch">
+        <div style="background:var(--color-accent-900);color:var(--color-bg);padding:20px;display:flex;flex-direction:column;gap:10px">
+          <span style="font-family:var(--font-heading);font-size:12px;color:var(--color-accent-300)">1 · COMPUTE LAUNCHES</span>
+          <span style="font-size:17px;font-weight:600">{{ tr.resource }}</span>
+          <span style="font-size:13px;line-height:1.5;color:var(--color-accent-200)">{{ tr.how }}</span>
+          <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">
+            <sc-for list="{{ tr.tags }}" as="g" hint-placeholder-count="4">
+              <span style="font-family:var(--font-heading);font-size:12px;display:flex;gap:6px"><span style="color:var(--color-accent-300)">{{ g.k }}</span><span>= {{ g.v }}</span></span>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="flex:1;background:var(--color-bg);border:1px solid var(--color-divider);box-shadow:inset 3px 0 0 var(--color-neutral-700);padding:18px 18px 18px 21px;display:flex;flex-direction:column;gap:8px">
+            <span style="font-family:var(--font-heading);font-size:12px;color:var(--color-neutral-700)">2a · system.billing.usage</span>
+            <sc-for list="{{ tr.usage }}" as="u" hint-placeholder-count="4">
+              <div style="display:grid;grid-template-columns:130px minmax(0,1fr);gap:8px;font-family:var(--font-heading);font-size:12px"><span style="color:var(--color-neutral-700)">{{ u.k }}</span><span style="word-break:break-all">{{ u.v }}</span></div>
+            </sc-for>
+          </div>
+          <div style="flex:1;background:var(--color-bg);border:1px solid var(--color-divider);box-shadow:inset 3px 0 0 var(--color-accent);padding:18px 18px 18px 21px;display:flex;flex-direction:column;gap:8px">
+            <span style="font-family:var(--font-heading);font-size:12px;color:var(--color-neutral-700)">2b · Azure Cost Management export</span>
+            <sc-if value="{{ tr.hasAzure }}" hint-placeholder-val="{{ true }}">
+              <sc-for list="{{ tr.azure }}" as="u" hint-placeholder-count="4">
+                <div style="display:grid;grid-template-columns:130px minmax(0,1fr);gap:8px;font-family:var(--font-heading);font-size:12px"><span style="color:var(--color-neutral-700)">{{ u.k }}</span><span style="word-break:break-all">{{ u.v }}</span></div>
+              </sc-for>
+            </sc-if>
+            <sc-if value="{{ tr.noAzure }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:14px;line-height:1.5;color:var(--color-neutral-700)">No separate VM or disk row. Compute is billed inside the serverless DBU rate, so the warehouse tags on the usage record are the only attribution.</span>
+            </sc-if>
+          </div>
+        </div>
+        <div class="blueprint" style="background:var(--color-bg);border:1px solid var(--color-divider);border-top:3px solid var(--color-accent-700);padding:20px;display:flex;flex-direction:column;gap:10px"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <span style="font-family:var(--font-heading);font-size:12px;color:var(--color-neutral-700)">3 · CHARGEBACK LINE</span>
+          <span style="font-size:17px;font-weight:600">Marketing Analytics · Customer 360</span>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:14px">
+            <div style="display:flex;justify-content:space-between"><span style="color:var(--color-neutral-700)">DBU cost</span><span style="font-family:var(--font-heading)">{{ tr.dbu }}</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:var(--color-neutral-700)">Azure infrastructure</span><span style="font-family:var(--font-heading)">{{ tr.infra }}</span></div>
+            <div style="display:flex;justify-content:space-between;border-top:1px solid var(--color-divider);padding-top:6px;font-weight:600"><span>This run / day</span><span style="font-family:var(--font-heading)">{{ tr.total }}</span></div>
+          </div>
+          <span style="font-size:13px;line-height:1.5;color:var(--color-neutral-700);margin-top:auto">{{ tr.unit }}</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:14px;font-weight:600">Allocation query: Databricks side, cost by tag</span>
+        <pre style="margin:0;background:var(--color-accent-900);color:var(--color-accent-200);padding:18px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.65;overflow-x:auto;white-space:pre">{{ sql }}</pre>
+        <span style="font-size:13px;color:var(--color-neutral-700)">List-price view. Apply the negotiated discount or DBCU rate in the dashboard layer, then union with the Azure export grouped by the same tag keys.</span>
+      </div>
+    </section>
+
+    <section id="t6" style="padding:64px 0 0;display:flex;flex-direction:column;gap:22px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:var(--font-heading);font-size:13px;color:var(--color-accent-700);font-weight:600">T6 · MONTHLY CHARGEBACK</span>
+        <h2 style="margin:0;font-family:var(--font-heading);font-size:30px;font-weight:600;letter-spacing:-.01em">What Customer 360's cost owner receives</h2>
+      </div>
+      <div class="blueprint" style="background:var(--color-bg);border:1px solid var(--color-divider);padding:24px 28px;display:flex;flex-direction:column;gap:18px"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:baseline">
+          <span style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px;color:var(--color-neutral-700)">CostCenter CC-4102 · September 2026</span><span style="font-size:28px;font-weight:600">$18,900 <span style="font-size:15px;font-weight:400;color:var(--color-neutral-700)">of $20,000 budget</span></span></span>
+          <span style="font-family:var(--font-heading);font-size:13px;font-weight:600;color:var(--color-accent-700);background:var(--color-accent-100);padding:4px 10px">94.5% · within budget</span>
+        </div>
+        <div style="display:flex;height:14px;background:var(--color-neutral-200)"><div style="width:94.5%;display:flex"><div style="width:61%;background:var(--color-neutral-700)"></div><div style="width:39%;background:var(--color-accent)"></div></div></div>
+        <div style="display:flex;gap:20px;font-size:13px;color:var(--color-neutral-700);flex-wrap:wrap"><span style="display:flex;gap:6px;align-items:center"><span style="width:10px;height:10px;background:var(--color-neutral-700)"></span>DBU $11,500</span><span style="display:flex;gap:6px;align-items:center"><span style="width:10px;height:10px;background:var(--color-accent)"></span>Azure infrastructure $7,400</span></div>
+        <div style="overflow-x:auto">
+          <div style="min-width:620px;display:flex;flex-direction:column">
+            <div style="display:grid;grid-template-columns:minmax(0,1.6fr) 110px 110px 110px 110px;gap:12px;padding:10px 0;border-bottom:1px solid var(--color-accent-900);font-family:var(--font-heading);font-size:11px;color:var(--color-neutral-700)"><span>WORKLOAD · ENVIRONMENT</span><span style="text-align:right">DBU</span><span style="text-align:right">AZURE</span><span style="text-align:right">TOTAL</span><span style="text-align:right">VS AUG</span></div>
+            <sc-for list="{{ charge }}" as="r" hint-placeholder-count="4">
+              <div style="display:grid;grid-template-columns:minmax(0,1.6fr) 110px 110px 110px 110px;gap:12px;padding:12px 0;border-bottom:1px solid var(--color-neutral-200);font-size:14px;align-items:baseline">
+                <span style="display:flex;flex-direction:column;gap:2px"><span style="font-weight:600">{{ r.name }}</span><span style="font-size:12px;color:var(--color-neutral-700)">{{ r.env }}</span></span>
+                <span style="text-align:right;font-family:var(--font-heading)">{{ r.dbu }}</span>
+                <span style="text-align:right;font-family:var(--font-heading)">{{ r.az }}</span>
+                <span style="text-align:right;font-family:var(--font-heading);font-weight:600">{{ r.total }}</span>
+                <span style="text-align:right;font-family:var(--font-heading);color:{{ r.dcol }}">{{ r.delta }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <span style="font-size:12px;color:var(--color-neutral-700)">Illustrative figures. Shared platform costs (NAT Gateway, storage accounts) are allocated by an agreed split rule, shown as a separate line.</span>
+      </div>
+    </section>
+
+    <section id="t7" style="padding:64px 0 0;display:flex;flex-direction:column;gap:22px">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span style="font-family:var(--font-heading);font-size:13px;color:var(--color-accent-700);font-weight:600">T7 · COMPLIANCE LOOP</span>
+        <h2 style="margin:0;font-family:var(--font-heading);font-size:30px;font-weight:600;letter-spacing:-.01em">Where untagged spend comes from, and how it is closed</h2>
+      </div>
+      <div style="display:flex;flex-direction:column;border-top:2px solid var(--color-accent-900)">
+        <sc-for list="{{ gaps }}" as="g" hint-placeholder-count="5">
+          <div style="display:grid;grid-template-columns:minmax(180px,260px) minmax(0,1fr) minmax(0,1fr);gap:8px 24px;padding:16px 0;border-bottom:1px solid var(--color-divider);align-items:baseline">
+            <span style="font-size:15px;font-weight:600">{{ g.src }}</span>
+            <span style="font-size:14px;line-height:1.55;color:var(--color-neutral-700)"><span style="font-size:11px;font-family:var(--font-heading);color:var(--color-neutral-700);display:block;margin-bottom:2px">DETECT</span>{{ g.detect }}</span>
+            <span style="font-size:14px;line-height:1.55;color:var(--color-neutral-700)"><span style="font-size:11px;font-family:var(--font-heading);color:var(--color-accent-700);display:block;margin-bottom:2px">FIX</span>{{ g.fix }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="background:var(--color-accent-900);color:var(--color-bg);padding:28px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px">
+        <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;color:var(--color-accent-300)">KPI TRACKED WEEKLY</span><span style="font-size:22px;font-weight:600">Untagged spend %</span></div>
+        <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;color:var(--color-accent-300)">EXAMPLE TARGET</span><span style="font-size:22px;font-weight:600">Under 5% by end of Phase 1</span></div>
+        <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;color:var(--color-accent-300)">REVIEWED IN</span><span style="font-size:22px;font-weight:600">Monthly FinOps review</span></div>
+      </div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const LAYERS = [
+  { platform: 'AZURE', name: 'Subscription & resource group', tool: 'Azure Policy', indent: 0, accent: 'var(--color-accent)',
+    what: 'Azure Policy requires tags on resource groups and makes resources inherit them. This covers infrastructure outside Databricks compute: storage accounts, NAT Gateway, Key Vault.',
+    config: ['"Require a tag on resource groups" for CostCenter, Project, Environment, Owner', '"Inherit a tag from the resource group if missing" on all resources', 'rg-c360-prod, rg-c360-staging, rg-c360-dev'] },
+  { platform: 'AZURE', name: 'Databricks workspace', tool: 'Azure resource tags', indent: 16, accent: 'var(--color-accent)',
+    what: 'Tags on the workspace resource propagate to the resources Databricks creates in the managed resource group, giving a baseline for all compute in that workspace.',
+    config: ['dbw-c360-prod tagged CostCenter=CC-4102, Project=customer-360, Environment=prod', 'One workspace per environment, so Environment can never be wrong'] },
+  { platform: 'DATABRICKS', name: 'Cluster policies', tool: 'custom_tags', indent: 32, accent: 'var(--color-neutral-700)',
+    what: 'The main control. Policies fix or allowlist tag values, so a cluster cannot start with missing or invalid tags. Tags flow to the VMs, disks and the usage record.',
+    config: ['Policy "c360-jobs" for production jobs, "c360-interactive" for notebooks', 'Only platform admins may create clusters without a policy'], hasCode: true,
+    code: `{
+  "custom_tags.CostCenter":  { "type": "fixed", "value": "CC-4102" },
+  "custom_tags.Project":     { "type": "fixed", "value": "customer-360" },
+  "custom_tags.Environment": { "type": "allowlist",
+                               "values": ["dev", "staging", "prod"] },
+  "custom_tags.Owner":       { "type": "regex",
+                               "pattern": "^[a-z0-9.-]+@contoso\\\\.com$" },
+  "autotermination_minutes": { "type": "range", "maxValue": 30 },
+  "node_type_id":            { "type": "allowlist",
+                               "values": ["Standard_E8ds_v5", "Standard_D8ds_v5"] }
+}` },
+  { platform: 'DATABRICKS', name: 'Jobs', tool: 'Job tags', indent: 48, accent: 'var(--color-neutral-700)',
+    what: 'Job-level tags are added to job clusters and appear on usage records, which allows attribution below Project, per pipeline.',
+    config: ['Pipeline=c360-nightly-ingest on the ETL job', 'Deployed through Databricks Asset Bundles so tags are version-controlled'] },
+  { platform: 'DATABRICKS', name: 'SQL Warehouses', tool: 'Warehouse tags', indent: 32, accent: 'var(--color-neutral-700)',
+    what: 'Warehouse tags attribute BI query spend. Warehouse creation is restricted to admins, who apply the standard keys.',
+    config: ['wh-c360-bi tagged with the four keys', 'Auto-stop 10 minutes, max 2 clusters'] },
+  { platform: 'DATABRICKS', name: 'Serverless budget policies', tool: 'Budget policy tags', indent: 32, accent: 'var(--color-neutral-700)',
+    what: 'Serverless notebooks, jobs and pipelines run outside VM-based cluster policies. Budget policies attach tags to that usage so it still reaches the chargeback report.',
+    config: ['Budget policy "bp-c360" assigned to the Customer 360 group', 'Users with only this policy get its tags on all serverless usage'] }
+];
+const STEPS = [
+  { name: 'Define', when: 'Week 1', owner: 'FinOps lead + engineering leadership', acts: ['Agree the four keys and their exact spelling', 'Publish controlled value lists (cost centres, projects)', 'Decide the split rule for shared platform costs'], output: 'Tagging standard v1, signed off' },
+  { name: 'Enforce', when: 'Weeks 1–2', owner: 'Platform admin', acts: ['Assign Azure Policy to Customer 360 resource groups', 'Create cluster policies and restrict unrestricted cluster creation', 'Create budget policies for serverless and tag SQL Warehouses'], output: 'Policies deployed as code' },
+  { name: 'Launch', when: 'Every run', owner: 'Data engineers & scientists', acts: ['Create compute only through assigned policies', 'Add Pipeline tags on jobs through Asset Bundles', 'Clusters with missing or invalid tags are rejected at launch'], output: 'Only tagged compute can run' },
+  { name: 'Propagate', when: 'Automatic', owner: 'Platform (no action)', acts: ['Custom and default tags are applied to VMs and managed disks', 'Tags are written to each usage record', 'Resources inherit resource group tags through Azure Policy'], output: 'Tags on both billing sources' },
+  { name: 'Collect', when: 'Daily', owner: 'Platform admin', acts: ['Query system.billing.usage and list_prices', 'Land the daily Azure Cost Management export in ADLS', 'Normalise tag keys across the two sources'], output: 'Joined cost table by tag' },
+  { name: 'Report', when: 'Monthly', owner: 'FinOps lead', acts: ['Reconcile Databricks and Azure totals against the invoice', 'Publish chargeback per cost centre vs budget and prior month', 'Track unit costs: per pipeline run, per dashboard query'], output: 'Chargeback report to cost owners' },
+  { name: 'Audit', when: 'Weekly', owner: 'FinOps lead + platform admin', acts: ['Report untagged and mis-tagged spend', 'Raise remediation with resource owners', 'Tighten policies where gaps recur'], output: 'Untagged spend % trend' }
+];
+const LANES = [
+  { name: 'FinOps', who: 'governance', on: [0, 5, 6] },
+  { name: 'Platform admin', who: 'enforcement', on: [1, 3, 4, 6] },
+  { name: 'Engineering', who: 'workload owners', on: [0, 2] }
+];
+const LANE_TEXT = {
+  '0-0': 'Tag standard, value lists', '0-5': 'Reconcile & publish chargeback', '0-6': 'Untagged spend report',
+  '1-1': 'Azure Policy, cluster & budget policies', '1-3': 'Automatic: VMs, disks, usage', '1-4': 'System tables + Azure export', '1-6': 'Tighten policies',
+  '2-0': 'Agree keys & values', '2-2': 'Launch via policy; job tags'
+};
+const TAGS = (env, owner) => [{ k: 'CostCenter', v: 'CC-4102' }, { k: 'Project', v: 'customer-360' }, { k: 'Environment', v: env }, { k: 'Owner', v: owner }];
+const TRACE = {
+  etl: { label: 'Nightly ETL', resource: 'Job cluster · c360-nightly-ingest', how: 'Launched by the Jobs scheduler through policy c360-jobs. Job tag Pipeline is added.', tags: [...TAGS('prod', 'data-eng@contoso.com'), { k: 'Pipeline', v: 'c360-nightly-ingest' }],
+    usage: [{ k: 'sku_name', v: 'PREMIUM_JOBS_COMPUTE' }, { k: 'usage_quantity', v: '42.6 DBU' }, { k: 'usage_metadata', v: 'job_id: 81234' }, { k: 'custom_tags', v: '{CostCenter: CC-4102, Project: customer-360, …}' }],
+    azure: [{ k: 'MeterCategory', v: 'Virtual Machines' }, { k: 'Meter', v: 'E8ds v5 Spot' }, { k: 'ResourceGroup', v: 'databricks-rg-c360-prod-…' }, { k: 'Tags', v: '{"CostCenter":"CC-4102", "Vendor":"Databricks", …}' }],
+    dbu: '$12.78', infra: '$9.40', total: '$22.18', unit: 'Unit cost: $22.18 per pipeline run, tracked against rows processed.' },
+  dev: { label: 'Churn notebooks', resource: 'All-purpose cluster · c360-ds-shared', how: 'Created by a data scientist through policy c360-interactive. Auto-terminates after 30 minutes idle.', tags: TAGS('dev', 'ds-team@contoso.com'),
+    usage: [{ k: 'sku_name', v: 'PREMIUM_ALL_PURPOSE_COMPUTE' }, { k: 'usage_quantity', v: '18.2 DBU' }, { k: 'usage_metadata', v: 'cluster_id: 0924-…' }, { k: 'custom_tags', v: '{CostCenter: CC-4102, Environment: dev, …}' }],
+    azure: [{ k: 'MeterCategory', v: 'Virtual Machines' }, { k: 'Meter', v: 'D8ds v5' }, { k: 'ResourceGroup', v: 'databricks-rg-c360-dev-…' }, { k: 'Tags', v: '{"CostCenter":"CC-4102", "ClusterName":"c360-ds-shared", …}' }],
+    dbu: '$10.01', infra: '$7.90', total: '$17.91', unit: 'Unit cost: $17.91 per working day for the shared data science cluster.' },
+  bi: { label: 'Power BI dashboards', resource: 'Serverless SQL Warehouse · wh-c360-bi', how: 'Created by a platform admin with warehouse tags. Auto-stops after 10 minutes idle.', tags: TAGS('prod', 'mkt-bi@contoso.com'),
+    usage: [{ k: 'sku_name', v: 'PREMIUM_SERVERLESS_SQL_COMPUTE_EAST_US' }, { k: 'usage_quantity', v: '31.5 DBU' }, { k: 'usage_metadata', v: 'warehouse_id: 7f3a…' }, { k: 'custom_tags', v: '{CostCenter: CC-4102, Project: customer-360, …}' }],
+    azure: null, dbu: '$22.05', infra: 'included', total: '$22.05', unit: 'Unit cost: about $0.02 per dashboard query at ~1,100 queries/day.' }
+};
+const SQL = `SELECT
+  u.custom_tags['CostCenter']  AS cost_center,
+  u.custom_tags['Project']     AS project,
+  u.custom_tags['Environment'] AS environment,
+  u.sku_name,
+  SUM(u.usage_quantity * p.pricing.default) AS list_cost_usd
+FROM system.billing.usage u
+JOIN system.billing.list_prices p
+  ON  u.sku_name = p.sku_name
+  AND u.usage_start_time >= p.price_start_time
+  AND (p.price_end_time IS NULL OR u.usage_start_time < p.price_end_time)
+WHERE u.usage_date >= date_trunc('MONTH', current_date())
+GROUP BY ALL
+ORDER BY list_cost_usd DESC;`;
+
+class Component extends DCLogic {
+  state = { layer: 2, step: 0, trace: 'etl' };
+  renderVals() {
+    const st = this.state;
+    const t = TRACE[st.trace];
+    return {
+      taxonomy: [
+        { key: 'CostCenter', value: 'CC-4102', allowed: 'Finance cost centre list (CC-xxxx)', setBy: 'Policy (fixed)', rule: 'fixed' },
+        { key: 'Project', value: 'customer-360', allowed: 'Registered project IDs, lower-case, hyphenated', setBy: 'Policy (fixed)', rule: 'fixed' },
+        { key: 'Environment', value: 'prod', allowed: 'dev, staging, prod', setBy: 'Policy per workspace', rule: 'allowlist' },
+        { key: 'Owner', value: 'data-eng@contoso.com', allowed: 'Team distribution list on @contoso.com', setBy: 'Engineer at launch', rule: 'regex' }
+      ],
+      defaultTags: ['Vendor', 'Creator', 'ClusterName', 'ClusterId', 'JobId', 'RunName'],
+      layers: LAYERS.map((l, i) => ({ ...l, bg: i === st.layer ? 'var(--color-accent-900)' : 'var(--color-bg)', fg: i === st.layer ? 'var(--color-bg)' : 'var(--color-accent-900)', border: i === st.layer ? 'var(--color-accent-900)' : 'var(--color-divider)', onClick: () => this.setState({ layer: i }) })),
+      layer: { ...LAYERS[st.layer], hasCode: !!LAYERS[st.layer].code },
+      steps: STEPS.map((s, i) => ({ ...s, num: i + 1, bg: i === st.step ? 'var(--color-accent-100)' : 'var(--color-bg)', bar: i === st.step ? 'var(--color-accent)' : 'transparent', onClick: () => this.setState({ step: i }) })),
+      step: { ...STEPS[st.step], num: st.step + 1 },
+      lanes: LANES.map((l, li) => ({ ...l, cells: STEPS.map((_, si) => {
+        const on = l.on.includes(si); const sel = si === st.step;
+        return { on, text: LANE_TEXT[`${li}-${si}`] || '', bgCell: sel ? 'var(--color-accent-100)' : 'var(--color-bg)', chip: on ? (sel ? 'var(--color-accent)' : (si === 3 ? 'var(--color-neutral-200)' : 'var(--color-accent-100)')) : 'transparent', chipFg: sel ? 'var(--color-bg)' : 'var(--color-accent-900)' };
+      }) })),
+      traceTabs: Object.entries(TRACE).map(([id, x]) => ({ label: x.label, bg: id === st.trace ? 'var(--color-accent-900)' : 'var(--color-bg)', fg: id === st.trace ? 'var(--color-bg)' : 'var(--color-accent-900)', onClick: () => this.setState({ trace: id }) })),
+      tr: { ...t, hasAzure: !!t.azure, noAzure: !t.azure, azure: t.azure || [] },
+      sql: SQL,
+      charge: [
+        { name: 'Nightly ETL', env: 'prod · Jobs Compute (spot workers)', dbu: '$4,200', az: '$3,100', total: '$7,300', delta: '−4%', dcol: 'var(--color-accent-700)' },
+        { name: 'Churn model notebooks', env: 'dev · All-Purpose', dbu: '$2,300', az: '$1,900', total: '$4,200', delta: '+12%', dcol: 'var(--color-neutral-800)' },
+        { name: 'Power BI dashboards', env: 'prod · Serverless SQL', dbu: '$4,100', az: '—', total: '$4,100', delta: '+2%', dcol: 'var(--color-neutral-700)' },
+        { name: 'Staging & CI runs', env: 'staging · Jobs Compute', dbu: '$900', az: '$700', total: '$1,600', delta: '−1%', dcol: 'var(--color-neutral-700)' },
+        { name: 'Shared platform allocation', env: 'NAT Gateway, ADLS · split rule', dbu: '—', az: '$1,700', total: '$1,700', delta: '0%', dcol: 'var(--color-neutral-700)' }
+      ],
+      gaps: [
+        { src: 'Clusters created before policies', detect: 'Usage records where custom_tags has no CostCenter key.', fix: 'Assign policies to existing clusters; remove unrestricted creation rights.' },
+        { src: 'Serverless usage without a budget policy', detect: 'Serverless SKUs with empty custom tags in system.billing.usage.', fix: 'Assign a default budget policy to every group that can use serverless.' },
+        { src: 'Misspelled or free-text values', detect: 'Distinct tag values not in the controlled list (e.g. "Customer360", "costcenter").', fix: 'Switch the key to fixed or allowlist in the policy; correct at source.' },
+        { src: 'Shared infrastructure', detect: 'NAT Gateway, storage and networking lines with no project owner.', fix: 'Tag with the platform cost centre and allocate by the agreed split rule.' },
+        { src: 'Resources outside Databricks', detect: 'Azure Policy compliance report on the Customer 360 resource groups.', fix: 'Tag inheritance from the resource group through Azure Policy.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
